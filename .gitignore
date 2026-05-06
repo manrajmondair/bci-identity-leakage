@@ -27,11 +27,13 @@ runs/
 wandb/
 mlruns/
 
-# Outputs
+# Outputs — JSON results and PDF figures are small and report-bound, so
+# we keep them. Raster images and large numpy dumps are regenerable and
+# gitignored.
 figures/*.png
-figures/*.pdf
+figures/*.jpg
 figures/*.svg
-results/
+results/*.npz
 *.csv
 !report/**/*.csv
 

@@ -1,0 +1,137 @@
+[
+  {
+    "subject_id": 1,
+    "model": "eegnet",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.4111111111111111,
+    "seconds": 16.294432878494263
+  },
+  {
+    "subject_id": 1,
+    "model": "fbcsp",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.16666666666666666,
+    "seconds": 11.301898956298828
+  },
+  {
+    "subject_id": 1,
+    "model": "riemann",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.37777777777777777,
+    "seconds": 0.6446981430053711
+  },
+  {
+    "subject_id": 2,
+    "model": "eegnet",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.35555555555555557,
+    "seconds": 14.988514184951782
+  },
+  {
+    "subject_id": 2,
+    "model": "fbcsp",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.32222222222222224,
+    "seconds": 10.551188945770264
+  },
+  {
+    "subject_id": 2,
+    "model": "riemann",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.4444444444444444,
+    "seconds": 0.6094212532043457
+  },
+  {
+    "subject_id": 3,
+    "model": "eegnet",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.23333333333333334,
+    "seconds": 14.563585042953491
+  },
+  {
+    "subject_id": 3,
+    "model": "fbcsp",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.4666666666666667,
+    "seconds": 10.544589042663574
+  },
+  {
+    "subject_id": 3,
+    "model": "riemann",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.45555555555555555,
+    "seconds": 0.6856749057769775
+  },
+  {
+    "subject_id": 4,
+    "model": "eegnet",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.26666666666666666,
+    "seconds": 15.063035726547241
+  },
+  {
+    "subject_id": 4,
+    "model": "fbcsp",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.3,
+    "seconds": 10.151286840438843
+  },
+  {
+    "subject_id": 4,
+    "model": "riemann",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.4111111111111111,
+    "seconds": 0.60054612159729
+  },
+  {
+    "subject_id": 5,
+    "model": "eegnet",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.4222222222222222,
+    "seconds": 14.344443082809448
+  },
+  {
+    "subject_id": 5,
+    "model": "fbcsp",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.3,
+    "seconds": 10.730053901672363
+  },
+  {
+    "subject_id": 5,
+    "model": "riemann",
+    "n_train": 180,
+    "n_test": 90,
+    "n_classes": 4,
+    "accuracy": 0.3111111111111111,
+    "seconds": 0.590843677520752
+  }
+]
