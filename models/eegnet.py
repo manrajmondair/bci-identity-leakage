@@ -135,25 +135,24 @@ class EEGNetVictim(VictimModel):
 
     @torch.no_grad()
     def embed(self, X: np.ndarray) -> np.ndarray:
-        """Return features from just before the final classification layer.
+        """Pre-classifier features: input to whatever module produces logits.
 
-        EEGNet's final layer is a Linear taking flattened spatiotemporal
-        features → n_classes. We hook into the input of that Linear by
-        running the network up to the second-to-last module and applying
-        the same flatten that the final layer expects.
+        braindecode's EEGNet ends in a small Sequential (`final_layer`)
+        whose input is a (B, F, 1, T') feature map; flatten gives a
+        per-window vector. We hook the head module by attribute name with
+        sensible fallbacks across braindecode versions.
         """
         if X.dtype != np.float32:
             X = X.astype(np.float32, copy=False)
         assert self.model_ is not None, "Call fit() first"
 
-        # Capture the input to the final classification layer.
-        final_layer = self._find_final_linear(self.model_)
+        head = self._find_head(self.model_)
         captured: list[torch.Tensor] = []
 
         def hook(_module, inputs, _output):
             captured.append(inputs[0].detach().cpu())
 
-        handle = final_layer.register_forward_hook(hook)
+        handle = head.register_forward_hook(hook)
         self.model_.eval()
         try:
             outs = []
@@ -164,25 +163,21 @@ class EEGNetVictim(VictimModel):
         finally:
             handle.remove()
 
-        # Keep as 2-D (n, d). braindecode's EEGNet feeds a flattened tensor
-        # into its final Linear, so emb is already (n, d). Defensive flatten:
         if emb.ndim > 2:
             emb = emb.reshape(emb.shape[0], -1)
         self._embedding_dim = emb.shape[1]
         return emb.astype(np.float32, copy=False)
 
     @staticmethod
-    def _find_final_linear(net: nn.Module) -> nn.Linear:
-        """Return the last nn.Linear in the network's module tree.
-
-        braindecode renames their final layer over time ('final_layer',
-        'classifier', etc.); rather than hardcoding a name, we find the
-        last nn.Linear in execution order, which is what we want.
+    def _find_head(net: nn.Module) -> nn.Module:
+        """Locate the final classification head as a named child first
+        (covers braindecode's stable names) and fall back to the last
+        named child if none matched.
         """
-        last: nn.Linear | None = None
-        for module in net.modules():
-            if isinstance(module, nn.Linear):
-                last = module
-        if last is None:
-            raise RuntimeError("EEGNet has no nn.Linear final layer to hook")
-        return last
+        for candidate in ("final_layer", "classifier", "fc", "head"):
+            if hasattr(net, candidate):
+                return getattr(net, candidate)
+        children = list(net.named_children())
+        if not children:
+            raise RuntimeError("EEGNet has no children; can't locate head")
+        return children[-1][1]
