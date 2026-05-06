@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bci-identity-leakage"
+version = "0.1.0"
+description = "EEG-as-Biometric: Cross-Session Identity Leakage in BCI Models (CS 281 Spring 2026)"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+authors = [{ name = "Manraj Singh Mondair" }]
+license = { text = "MIT" }
+
+dependencies = [
+  # Numerics
+  "numpy>=1.26,<2.3",
+  "scipy>=1.11",
+  "pandas>=2.1",
+  "scikit-learn>=1.4",
+  # EEG I/O and preprocessing
+  "mne>=1.7",
+  "moabb>=1.1",          # gives BCI IV-2a access on top of mne
+  # Classical BCI
+  "pyriemann>=0.6",
+  # Deep BCI
+  "torch==2.5.1",
+  "torchaudio==2.5.1",   # must match torch ABI; pip resolver otherwise pulls 2.11
+  "braindecode>=1.4,<1.5",
+  # Differential privacy
+  "opacus>=1.5",
+  # Plotting and reporting
+  "matplotlib>=3.8",
+  "seaborn>=0.13",
+  # Utilities
+  "tqdm>=4.66",
+  "pyyaml>=6.0",
+  "rich>=13.7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.4",
+  "ipykernel>=6.29",
+  "jupyterlab>=4.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["data*", "preprocess*", "models*", "attacks*", "defenses*", "eval*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = ["E501"]

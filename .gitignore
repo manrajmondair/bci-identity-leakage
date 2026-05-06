@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Data & cache
+cache/
+~/mne_data/
+*.fif
+*.edf
+*.npz
+*.npy
+*.pt
+*.ckpt
+runs/
+wandb/
+mlruns/
+
+# Outputs
+figures/*.png
+figures/*.pdf
+figures/*.svg
+results/
+*.csv
+!report/**/*.csv
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# LaTeX build artifacts
+report/**/*.aux
+report/**/*.log
+report/**/*.out
+report/**/*.bbl
+report/**/*.blg
+report/**/*.synctex.gz
+report/**/*.toc
+report/**/*.fls
+report/**/*.fdb_latexmk
