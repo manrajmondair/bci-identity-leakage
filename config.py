@@ -24,10 +24,13 @@ PHYSIONET_RUNS_BASELINE = (1, 2)
 PHYSIONET_DROP_SUBJECTS = (88, 89, 92, 100, 104)
 PHYSIONET_N_SUBJECTS = 109  # before drops; n_used = 104
 
-# Standard motor-imagery preprocessing
+# Standard motor-imagery preprocessing.
+# Bandpass is wide (4–40 Hz) so the filterbank in FBCSP has the spectral
+# headroom it needs. Narrower 8–30 Hz pre-filtering would zero-out the
+# 4–8 Hz and 28–40 Hz sub-bands and tank FBCSP accuracy.
 SAMPLING_RATE = 160  # Hz, native PhysioNet rate
-BANDPASS_LOW = 8.0
-BANDPASS_HIGH = 30.0
+BANDPASS_LOW = 4.0
+BANDPASS_HIGH = 40.0
 EPOCH_TMIN = 0.0   # s relative to event
 EPOCH_TMAX = 4.0
 WINDOW_SECONDS = 2.0
