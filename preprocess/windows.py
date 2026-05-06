@@ -16,12 +16,17 @@ mne.Epochs so the rest of the pipeline can be framework-agnostic.
 """
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
+from pathlib import Path
 
 import mne
 import numpy as np
 
 from config import (
+    BANDPASS_HIGH,
+    BANDPASS_LOW,
+    CACHE_DIR,
     EPOCH_TMAX,
     EPOCH_TMIN,
     PHYSIONET_RUNS_EXECUTION,
@@ -249,19 +254,61 @@ def windowed_subject(
     )
 
 
+def _cache_key(subject_ids: list[int], runs: str | tuple[int, ...],
+               bandpass_low: float | None, bandpass_high: float | None,
+               window_seconds: float, stride_seconds: float) -> str:
+    """Stable hash of the configuration that produced a windowed dataset.
+
+    Lets us reuse cached arrays across attacks as long as preprocessing is
+    identical, and forces a recompute when any preprocessing knob changes.
+    """
+    h = hashlib.sha256()
+    h.update(repr(sorted(subject_ids)).encode())
+    h.update(repr(runs if isinstance(runs, str) else tuple(sorted(runs))).encode())
+    h.update(repr((bandpass_low, bandpass_high, window_seconds, stride_seconds)).encode())
+    return h.hexdigest()[:16]
+
+
 def windowed_subjects(
     subject_ids: list[int],
-    **kwargs,
+    *,
+    runs: str | tuple[int, ...] = "imagery",
+    bandpass_low: float | None = BANDPASS_LOW,
+    bandpass_high: float | None = BANDPASS_HIGH,
+    window_seconds: float = WINDOW_SECONDS,
+    stride_seconds: float = WINDOW_STRIDE_SECONDS,
+    cache: bool = True,
 ) -> WindowedDataset:
     """Same as windowed_subject but pooled across many subjects.
 
     Trial IDs are made unique across subjects by offsetting per-subject IDs
     into disjoint integer ranges (subject_id * 100_000 + trial_id_within_subj).
+
+    If `cache=True` (default) the result is persisted under
+    cache/windows/<hash>.npz and reused on subsequent calls with the same
+    config. The cache is a few hundred MB for the full 104-subject set.
     """
+    if cache:
+        key = _cache_key(subject_ids, runs, bandpass_low, bandpass_high,
+                         window_seconds, stride_seconds)
+        cache_path = Path(CACHE_DIR) / "windows" / f"{key}.npz"
+        if cache_path.exists():
+            data = np.load(cache_path, allow_pickle=False)
+            return WindowedDataset(
+                X=data["X"], y=data["y"],
+                subject_ids=data["subject_ids"], trial_ids=data["trial_ids"],
+                run_ids=data["run_ids"],
+                sfreq=float(data["sfreq"].item()),
+                channel_names=tuple(data["channel_names"].tolist()),
+            )
+
     parts = []
     for s in subject_ids:
-        ds = windowed_subject(s, **kwargs)
-        # offset trial_ids so they remain unique post-concat
+        ds = windowed_subject(
+            s, runs=runs,
+            bandpass_low=bandpass_low, bandpass_high=bandpass_high,
+            window_seconds=window_seconds, stride_seconds=stride_seconds,
+        )
         offset = s * 100_000
         parts.append((ds.X, ds.y, ds.subject_ids, ds.trial_ids + offset, ds.run_ids,
                       ds.sfreq, ds.channel_names))
@@ -273,10 +320,18 @@ def windowed_subjects(
     r = np.concatenate([p[4] for p in parts], axis=0)
     sfreq = parts[0][5]
     ch_names = parts[0][6]
-    # Sanity: every subject must agree on channel order
     for p in parts[1:]:
         assert p[6] == ch_names, "Channel mismatch between subjects"
-    return WindowedDataset(
+
+    result = WindowedDataset(
         X=X, y=y, subject_ids=s, trial_ids=t, run_ids=r,
         sfreq=sfreq, channel_names=ch_names,
     )
+
+    if cache:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez(cache_path,
+                 X=X, y=y, subject_ids=s, trial_ids=t, run_ids=r,
+                 sfreq=np.asarray(sfreq),
+                 channel_names=np.asarray(ch_names))
+    return result

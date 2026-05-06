@@ -20,8 +20,9 @@ from dataclasses import asdict
 import numpy as np
 
 from attacks.closed_set import closed_set_reid
-from config import RESULTS_DIR
+from config import FIGURES_DIR, RESULTS_DIR
 from data.physionet_loader import valid_subjects
+from eval.plots import closed_set_bar_chart, closed_set_table
 from models.eegnet import EEGNetVictim
 from models.fbcsp import FBCSPVictim
 from models.riemannian import RiemannianVictim
@@ -55,7 +56,8 @@ def main() -> None:
     p.add_argument("--models", nargs="+",
                    default=["eegnet", "fbcsp", "riemann"],
                    choices=["eegnet", "fbcsp", "riemann"])
-    p.add_argument("--eegnet-epochs", type=int, default=60)
+    p.add_argument("--eegnet-epochs", type=int, default=80,
+                   help="Reduced to 30 under --smoke for fast pipeline check.")
     p.add_argument("--bootstrap-n", type=int, default=1000)
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
@@ -119,7 +121,16 @@ def main() -> None:
 
     out_path = RESULTS_DIR / "02_closed_set_reid.json"
     out_path.write_text(json.dumps(all_results, indent=2))
-    print(f"Results written to {out_path}")
+    print(f"\nResults written to {out_path}")
+
+    fig_path = FIGURES_DIR / "02_closed_set_reid.pdf"
+    closed_set_bar_chart(
+        all_results, fig_path,
+        title=f"A1 closed-set re-ID on PhysioNet ({len(subjects)} subjects)",
+    )
+    print(f"Figure written to {fig_path}")
+
+    print("\n" + closed_set_table(all_results))
 
 
 if __name__ == "__main__":
