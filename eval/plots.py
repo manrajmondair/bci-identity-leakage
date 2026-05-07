@@ -82,6 +82,51 @@ def closed_set_bar_chart(
     plt.close(fig)
 
 
+def verification_panel(
+    scores: np.ndarray,
+    labels: np.ndarray,
+    auc: float,
+    eer: float,
+    out_path: str | Path,
+    *,
+    title: str = "Open-set verification (A4)",
+) -> None:
+    """Two-panel plot for verification results.
+
+    Left: similarity histogram, same vs different pairs.
+    Right: ROC curve with AUC and EER annotated.
+    """
+    plt.rcParams.update(_setup_axes())
+    fig, (ax_l, ax_r) = plt.subplots(1, 2, figsize=(7.5, 3.6))
+
+    same = scores[labels == 1]
+    diff = scores[labels == 0]
+    bins = np.linspace(min(scores.min(), -1), max(scores.max(), 1), 50)
+    ax_l.hist(diff, bins=bins, alpha=0.6, color="#7f8c8d", label="different subject")
+    ax_l.hist(same, bins=bins, alpha=0.6, color="#2c3e50", label="same subject")
+    ax_l.set_xlabel("Cosine similarity")
+    ax_l.set_ylabel("Count")
+    ax_l.set_title("Pair-similarity distribution")
+    ax_l.legend(frameon=False, fontsize=8)
+    ax_l.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+
+    from sklearn.metrics import roc_curve
+    fpr, tpr, _ = roc_curve(labels, scores)
+    ax_r.plot(fpr, tpr, color="#2c3e50", linewidth=1.2)
+    ax_r.plot([0, 1], [0, 1], color="#c0392b", linewidth=0.6, linestyle="--")
+    ax_r.set_xlabel("False-positive rate")
+    ax_r.set_ylabel("True-positive rate")
+    ax_r.set_title(f"ROC  (AUC = {auc:.3f},  EER = {eer:.3f})")
+    ax_r.set_xlim(0, 1)
+    ax_r.set_ylim(0, 1.02)
+    ax_r.grid(linestyle=":", linewidth=0.4, alpha=0.5)
+
+    fig.suptitle(title, y=1.02, fontsize=10)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def closed_set_table(results: list[dict]) -> str:
     """Render the same JSON as a markdown table — used in milestone draft."""
     lines = [
