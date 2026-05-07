@@ -145,8 +145,14 @@ def main() -> None:
             all_results.append({**asdict(r), "task_acc": task_acc})
         print()
 
+    # Replace NaN top-k with None so the JSON is RFC-strict (some tooling
+    # rejects bare NaN). top-5 / top-10 are NaN whenever n_subjects <= k.
+    def _nan_to_none(v):
+        return None if isinstance(v, float) and (v != v) else v
+
+    sanitized = [{k: _nan_to_none(v) for k, v in r.items()} for r in all_results]
     out_path = RESULTS_DIR / "05_a3_cross_session.json"
-    out_path.write_text(json.dumps(all_results, indent=2))
+    out_path.write_text(json.dumps(sanitized, indent=2, allow_nan=False))
     print(f"Results written to {out_path}")
 
     fig_path = FIGURES_DIR / "05_a3_cross_session.pdf"
