@@ -22,6 +22,7 @@ exclusively for cross-session re-ID.
 """
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 
 import mne
@@ -52,6 +53,38 @@ def _load_dataset():
     return BNCI2014_001()
 
 
+def _get_subject_data_with_retry(
+    subject_id: int,
+    *,
+    max_attempts: int = 4,
+    backoff_seconds: float = 4.0,
+) -> dict:
+    """Wrap moabb.get_data with retries.
+
+    moabb's pooch backend uses requests.iter_content without auto-retry, so a
+    mid-stream connection drop (`IncompleteRead`) on the IV-2a host kills
+    the whole experiment. We've seen this happen on Colab. Retrying after a
+    short backoff resumes from where pooch left off (the partial file is
+    discarded; the next attempt re-downloads the failing .mat from scratch).
+    """
+    last_err: Exception | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            ds = _load_dataset()
+            return ds.get_data(subjects=[subject_id])
+        except Exception as exc:
+            last_err = exc
+            if attempt < max_attempts:
+                wait = backoff_seconds * (2 ** (attempt - 1))
+                print(f"    IV-2a get_data for subject {subject_id} "
+                      f"failed (attempt {attempt}/{max_attempts}): "
+                      f"{type(exc).__name__}: {exc}. "
+                      f"Retrying in {wait:.0f}s ...", flush=True)
+                time.sleep(wait)
+    assert last_err is not None
+    raise last_err
+
+
 def load_subject_session(
     subject_id: int,
     session: str = "0train",
@@ -72,8 +105,7 @@ def load_subject_session(
     if session not in ("0train", "1test"):
         raise ValueError(f"session must be '0train' or '1test', got {session!r}")
 
-    ds = _load_dataset()
-    data = ds.get_data(subjects=[subject_id])  # downloads on first use
+    data = _get_subject_data_with_retry(subject_id)  # downloads on first use
     session_runs = data[subject_id][session]  # dict[run_name -> Raw]
     raws = list(session_runs.values())
     raw = mne.concatenate_raws(raws, verbose=False)
