@@ -59,6 +59,7 @@ class EEGNetVictim(VictimModel):
         device: str = "auto",
         seed: int = 0,
         verbose: bool = False,
+        input_scale: float = 1e6,
     ) -> None:
         self.n_channels = n_channels
         self.n_times = n_times
@@ -70,6 +71,11 @@ class EEGNetVictim(VictimModel):
         self.device = _pick_device(device)
         self.seed = seed
         self.verbose = verbose
+        # mne returns EEG in volts (~1e-5 V). EEGNet's published hyperparameters
+        # were tuned for microvolts (~10-100 uV). At the volt scale, gradients
+        # through the temporal conv vanish and the network cannot learn motor
+        # imagery; multiplying by 1e6 brings the input to the trained-on scale.
+        self.input_scale = input_scale
         self.model_: EEGNet | None = None
         self._embedding_dim: int | None = None
 
@@ -92,7 +98,9 @@ class EEGNetVictim(VictimModel):
             rng.shuffle(idx)
         for start in range(0, len(idx), self.batch_size):
             sl = idx[start:start + self.batch_size]
-            xb = torch.from_numpy(X[sl]).to(self.device)
+            # Rescale volts -> microvolts on the fly so the cached arrays
+            # remain in physical units for the classical baselines.
+            xb = torch.from_numpy(X[sl] * self.input_scale).to(self.device)
             yb = None if y is None else torch.from_numpy(y[sl]).long().to(self.device)
             yield xb, yb
 
