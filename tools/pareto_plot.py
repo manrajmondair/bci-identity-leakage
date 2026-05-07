@@ -94,6 +94,7 @@ def main() -> None:
         ("d1_noise",        RESULTS_DIR / "11_d1_noise.json"),
         ("d1_channel_drop", RESULTS_DIR / "11_d1_channel_drop.json"),
         ("d2_dann",         RESULTS_DIR / "09_d2_dann.json"),
+        ("d2_dann",         RESULTS_DIR / "09_d2_dann_extended.json"),
         ("d3_dp_sgd",       RESULTS_DIR / "10_d3_dp_sgd.json"),
     ]
 

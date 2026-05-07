@@ -21,8 +21,8 @@ contrastive EEG embedding generalizes to *unseen* subjects at AUC 0.925 — voic
 biometric strength on people the model has never seen. We further benchmark
 defenses across three families: ad-hoc transforms (PCA, additive noise,
 channel-drop), adversarial subject-invariant training (DANN), and formal
-differential privacy (DP-SGD). Adversarial training at low strength (DANN λ=0.1)
-strictly dominates every ad-hoc point we tested — −14 percentage points of
+differential privacy (DP-SGD). Adversarial training at low strength (DANN λ=0.2)
+strictly dominates every ad-hoc point we tested — **−20 percentage points** of
 identity leakage with **zero** task-accuracy loss.
 
 ---
@@ -157,9 +157,10 @@ The trained-model API alone leaks who was in the training cohort.
 | D1 noise σ=1.0              | (0.19, 0.34) | dominates D1 PCA on EEGNet |
 | D1 noise σ=2.0              | (0.10, 0.29) | first ad-hoc to crack Riemann (1.00 → 0.70), but task → chance |
 | D1 channel-drop k=8         | (0.37, 0.30) | mirrors PCA; no improvement |
-| **D2 DANN λ=0.1**           | **(0.27, 0.40)** | **strict win: −14 pp leak with zero task loss** |
+| **D2 DANN λ=0.2**           | **(0.22, 0.40)** | **strict win: −20 pp leak; task slightly above baseline** |
+| D2 DANN λ=0.1               | (0.27, 0.40) | original sweet spot |
 | D2 DANN λ=0.5               | (0.08, 0.25) | task collapsed |
-| D3 DP-SGD                   | *(in progress)* | formal (ε, δ) bound; results to land |
+| D3 DP-SGD ε=3 (Opacus)      | (0.02, 0.30) | formal (ε,δ); architectural side-effects dominate |
 
 The Pareto figure (Figure 1 below) summarizes all defense points across the
 three victim families. Adversarial training at low strength is the only
