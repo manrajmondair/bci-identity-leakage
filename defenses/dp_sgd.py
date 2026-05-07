@@ -79,10 +79,23 @@ class DPSGDVictim(VictimModel):
         torch.manual_seed(self.seed)
         net = EEGNet(n_chans=self.n_channels, n_outputs=self.n_classes,
                      n_times=self.n_times)
-        # Opacus needs DP-friendly layers — swap BatchNorm for GroupNorm etc.
+        # braindecode's EEGNet wraps the spatial conv's weight in
+        # nn.utils.parametrize (a max-norm constraint). Parametrized modules
+        # don't pickle, and Opacus's ModuleValidator.fix needs to pickle to
+        # clone the module. Strip parametrizations and bake the (now-constant)
+        # parametrized weights into the underlying parameters before handing
+        # to Opacus. Loses the max-norm constraint, but DP-SGD's per-sample
+        # gradient clipping is itself a strong regularizer, so this is fine.
+        import torch.nn.utils.parametrize as parametrize
+        for module in net.modules():
+            if hasattr(module, "parametrizations"):
+                for param_name in list(module.parametrizations.keys()):
+                    parametrize.remove_parametrizations(
+                        module, param_name, leave_parametrized=True,
+                    )
+        # Now safe to swap incompatible layers (BN -> GN) and clone for DP.
         from opacus.validators import ModuleValidator
         net = ModuleValidator.fix(net)
-        # Verify post-fix
         ModuleValidator.validate(net, strict=True)
         return net.to(self.device)
 

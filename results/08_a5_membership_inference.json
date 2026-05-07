@@ -1,0 +1,12 @@
+{
+  "n_shadows": 20,
+  "n_subjects": 104,
+  "n_target_members": 52,
+  "n_target_nonmembers": 52,
+  "auc": 0.8783284023668638,
+  "auc_ci_low": 0.8032675023848037,
+  "auc_ci_high": 0.9434003359062323,
+  "advantage": 0.6346153846153846,
+  "advantage_threshold": 0.39611078993921206,
+  "n_attack_features": 2
+}
