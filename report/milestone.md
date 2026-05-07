@@ -171,21 +171,43 @@ channel-drop) or buy privacy but collapse task to chance (high-σ noise).
 > Lower-right corner = high utility AND low identity leak. See
 > `figures/pareto_privacy_utility.pdf`.
 
-### 3.6 Per-subject heterogeneity (within-cohort fairness)
+### 3.6 Subgroup fairness (sex, age) and within-cohort heterogeneity
 
-PhysioNet's EDFs are anonymized — `his_id: X, sex: 0` for every subject — so
-demographic-stratified fairness analysis is not possible on this dataset. We
-instead analyze **per-subject** A1 attack accuracy distribution:
+PhysioNet's EDFs are anonymized (`his_id: X, sex: 0`), but OpenNeuro's BIDS
+conversion of the same source data (ds004362) re-publishes Gender + Age +
+Handedness for 95 of 109 subjects with the same indexing. After mapping back
+onto our 104-subject analysis cohort: 41 M / 56 F / 7 unknown sex; 91 with
+known age (range 19–67, median 38).
 
-> *Figure 2.* Distribution of per-subject A1 leakage (FBCSP and Riemann),
-> plus per-subject scatter of (task acc, attack acc). See
-> `figures/12_per_subject_heterogeneity.pdf`. *Numbers fill in once
-> `tools/subgroup_fairness.py` finishes — placeholder.*
+| Victim | M (mean) / F (mean), Δ, p | Age low (mean) / age high (mean), Δ, p | Decile gap (most − least) |
+|---|---|---|---|
+| FBCSP+LDA | 0.898 / 0.883, Δ=+0.015, **p=0.67** | 0.935 / 0.854, Δ=+0.081, **p=0.08** | +0.490 |
+| Riemann   | 1.000 / 1.000, Δ=0.000, p=1.0     | 1.000 / 1.000, Δ=0.000, p=1.0          | 0.000 (ceiling) |
 
-The lack of public demographics for EEG-MMIDB is itself a finding: **standard
-EEG-dataset anonymization removes exactly the metadata privacy research needs
-to audit demographic fairness**. We flag this in the limitations and discuss
-implications below.
+Three findings:
+
+1. **A1 attack accuracy is statistically indistinguishable by sex** on
+   FBCSP (Δ ~1.5 pp, p=0.67). Men and women are equally identifiable.
+2. **Marginal age effect on FBCSP**: subjects in the youngest age tertile
+   (19–28) leak ~8 percentage points more than the oldest tertile (≈50+),
+   p=0.08. Suggestive but not formally significant at α=0.05; consistent
+   with the hypothesis that younger subjects have more characteristic
+   motor-imagery patterns.
+3. **Riemann is at ceiling** — every subject and every subgroup is
+   identified at 100%. There is no demographic variation to detect:
+   the strongest classical pipeline identifies everyone perfectly. This
+   is a fairness story in itself — under the standard tangent-space
+   pipeline, *every* demographic group experiences maximum threat.
+
+Beyond demographics, the per-subject distribution of FBCSP attack accuracy
+is heterogeneous: **the most-leaked decile of subjects has 49-pp higher
+attack accuracy than the least-leaked decile**. Identity leakage is not
+uniformly distributed across the cohort; some users are substantially
+more identifiable than others, even at fixed cohort and victim model.
+
+> *Figure 2.* Subgroup fairness on FBCSP and Riemann: histogram of per-
+> subject leakage, scatter of (task acc, attack acc), and box-plots by
+> sex and age tertile. See `figures/12_subgroup_fairness.pdf`.
 
 ## 4. Discussion
 
