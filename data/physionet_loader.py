@@ -145,9 +145,28 @@ def run_label_pair(run: int) -> tuple[int, int]:
 def subject_metadata(subject_id: int, cache_dir: Path | None = None) -> dict:
     """Return {'subject_id', 'age_years', 'sex', 'sex_code'} for a subject.
 
-    We only read R01 (baseline) since the metadata is identical across runs.
+    Subject metadata lives in every EDF's header; reads whichever run is
+    already cached so we don't trigger ~100 MB of baseline-run downloads
+    for subjects whose imagery runs are already on disk. Falls back to
+    R01 if nothing else is cached.
     """
-    paths = eegbci.load_data(subject_id, [1], path=str(cache_dir) if cache_dir else None,
+    # Prefer an already-cached run. Imagery runs are typically present
+    # because A1 caches them; baseline (1, 2) tend not to be.
+    candidate_runs = list(PHYSIONET_RUNS_IMAGERY) + [1, 2]
+    base = (Path(cache_dir) if cache_dir
+            else Path.home() / "mne_data" / "MNE-eegbci-data"
+            / "files" / "eegmmidb" / "1.0.0")
+    chosen_run = None
+    for r in candidate_runs:
+        candidate = base / f"S{subject_id:03d}" / f"S{subject_id:03d}R{r:02d}.edf"
+        if candidate.exists():
+            chosen_run = r
+            break
+    if chosen_run is None:
+        chosen_run = 1  # trigger download as fallback
+
+    paths = eegbci.load_data(subject_id, [chosen_run],
+                             path=str(cache_dir) if cache_dir else None,
                              update_path=False, verbose=False)
     raw = read_raw_edf(paths[0], preload=False, verbose=False)
     info = raw.info["subject_info"] or {}

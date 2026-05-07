@@ -1,0 +1,15 @@
+{
+  "run_id": "20260507T223515_d3_dp_sgd_46900d3",
+  "experiment": "experiments.10_d3_dp_sgd",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "46900d38c5e83017bc1101dbea28cdc5cd1a7566",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.113+-x86_64-with-glibc2.35",
+  "torch_version": "2.10.0+cu128",
+  "completed_at_utc": "2026-05-07T22:35:15Z",
+  "outputs": [
+    "results/10_d3_dp_sgd.json"
+  ]
+}
