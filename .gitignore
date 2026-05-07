@@ -23,7 +23,6 @@ cache/
 *.npy
 *.pt
 *.ckpt
-runs/
 wandb/
 mlruns/
 
