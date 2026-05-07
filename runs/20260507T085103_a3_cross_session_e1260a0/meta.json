@@ -1,0 +1,16 @@
+{
+  "run_id": "20260507T085103_a3_cross_session_e1260a0",
+  "experiment": "experiments.05_a3_cross_session",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "e1260a0d3b42f186e290494a14f5829d624ad6af",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.113+-x86_64-with-glibc2.35",
+  "torch_version": "2.10.0+cu128",
+  "completed_at_utc": "2026-05-07T08:51:03Z",
+  "outputs": [
+    "results/05_a3_cross_session.json",
+    "figures/05_a3_cross_session.pdf"
+  ]
+}

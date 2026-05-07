@@ -180,12 +180,21 @@ def closed_set_table(results: list[dict]) -> str:
         "| Victim | Probe | Top-1 (95% CI) | Top-5 | Top-10 | Task acc | Chance top-1 |",
         "|---|---|---|---|---|---|---|",
     ]
+    def _fmt(v):
+        # Handle both legacy NaN floats and the JSON-strict null we now write.
+        if v is None:
+            return "—"
+        try:
+            return "—" if np.isnan(v) else f"{v:.3f}"
+        except TypeError:
+            return "—"
+
     for r in sorted(results, key=lambda x: (x["victim"], x["probe"])):
         ci = f"{r['top1']:.3f} [{r['top1_ci_low']:.3f}, {r['top1_ci_high']:.3f}]"
-        top5 = "—" if np.isnan(r.get("top5", float("nan"))) else f"{r['top5']:.3f}"
-        top10 = "—" if np.isnan(r.get("top10", float("nan"))) else f"{r['top10']:.3f}"
+        task_acc = r.get("task_acc")
+        task_acc_s = f"{task_acc:.3f}" if isinstance(task_acc, (int, float)) else "—"
         lines.append(
-            f"| {r['victim']} | {r['probe']} | {ci} | {top5} | {top10} | "
-            f"{r.get('task_acc', float('nan')):.3f} | {r['chance_top1']:.3f} |"
+            f"| {r['victim']} | {r['probe']} | {ci} | {_fmt(r.get('top5'))} | "
+            f"{_fmt(r.get('top10'))} | {task_acc_s} | {r['chance_top1']:.3f} |"
         )
     return "\n".join(lines)
