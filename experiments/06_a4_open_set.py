@@ -96,6 +96,12 @@ def main() -> None:
     out_path.write_text(json.dumps(out, indent=2))
     print(f"\nResults written to {out_path}")
 
+    # Also dump per-pair scores so the rich verification figure can be
+    # regenerated locally without re-running the experiment.
+    scores_path = RESULTS_DIR / "06_a4_open_set_scores.npz"
+    np.savez(scores_path, scores=scores, labels=labels)
+    print(f"Per-pair scores written to {scores_path}")
+
     fig_path = FIGURES_DIR / "06_a4_open_set.pdf"
     verification_panel(
         scores=scores, labels=labels,

@@ -127,6 +127,53 @@ def verification_panel(
     plt.close(fig)
 
 
+def verification_summary_card(
+    auc: float,
+    auc_ci_low: float,
+    auc_ci_high: float,
+    eer: float,
+    n_train_subjects: int,
+    n_test_subjects: int,
+    n_pairs: int,
+    out_path: str | Path,
+    *,
+    title: str = "A4 open-set verification — unseen subjects",
+) -> None:
+    """Compact card rendering AUC and EER without per-pair scores.
+
+    Used when only the summary stats from the experiment JSON are available
+    (e.g., when re-generating figures from a Colab run that did not ship the
+    raw score arrays). The richer two-panel `verification_panel` is preferred
+    when scores are on hand.
+    """
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(6.2, 2.6))
+    ax.axis("off")
+
+    ax.text(0.02, 0.85, title, fontsize=11, fontweight="bold")
+    ax.text(0.02, 0.65,
+            f"Trained on {n_train_subjects} subjects   ·   "
+            f"Evaluated on {n_test_subjects} unseen subjects   ·   "
+            f"{n_pairs:,} verification pairs",
+            fontsize=8)
+
+    ax.text(0.02, 0.30, f"AUC = {auc:.3f}",
+            fontsize=22, fontweight="bold", color="#2c3e50")
+    ax.text(0.32, 0.30,
+            f"95% CI [{auc_ci_low:.3f}, {auc_ci_high:.3f}]",
+            fontsize=9, color="#7f8c8d", verticalalignment="bottom")
+    ax.text(0.02, 0.07, f"Equal Error Rate = {eer:.3f}",
+            fontsize=11, color="#34495e")
+
+    # Tiny chance reference
+    ax.text(0.55, 0.30, "Random = 0.500",
+            fontsize=9, color="#c0392b", verticalalignment="bottom",
+            fontstyle="italic")
+
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def closed_set_table(results: list[dict]) -> str:
     """Render the same JSON as a markdown table — used in milestone draft."""
     lines = [
