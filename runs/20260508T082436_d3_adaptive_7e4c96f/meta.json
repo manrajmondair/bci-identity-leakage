@@ -1,0 +1,15 @@
+{
+  "run_id": "20260508T082436_d3_adaptive_7e4c96f",
+  "experiment": "experiments.18_d3_adaptive_attacker",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "7e4c96f7b9040a0ab24a797395607614c50b1b45",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.113+-x86_64-with-glibc2.35",
+  "torch_version": "2.10.0+cu128",
+  "completed_at_utc": "2026-05-08T08:24:36Z",
+  "outputs": [
+    "results/18_d3_adaptive_attacker.json"
+  ]
+}

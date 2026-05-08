@@ -119,6 +119,36 @@ MI AUC across the three victim families (EEGNet, FBCSP, Riemann). Riemann at cei
 - **Source JSON:** `17_subgroup_fairness_eegnet.json`
 - **Script:** `tools/regenerate_figures.py::render_subgroup_fairness_eegnet`
 
+### `figures/18_d3_adaptive_attacker.pdf` ⭐
+**The matched positive to figure 15.** DP-SGD ε=3 holds under the same encoder-fine-tune attack that broke DANN. Bar chart: A1 baseline (0.411), DP logreg (0.022), DP deep MLP (0.056), DP fine-tune (**0.049**). Formal DP is attacker-agnostic by construction; this empirically confirms it.
+
+- **Source JSON:** `18_d3_adaptive_attacker.json`
+- **Script:** `tools/regenerate_figures.py::render_d3_adaptive_attacker`
+
+### `figures/19_dp_sgd_arch_ablation.pdf`
+Three-bar breakdown of D3's privacy contribution: AdamW+BN baseline (0.411), SGD+GN no-DP (0.044), SGD+GN+DP ε=3 (0.022). 36.7 pp from architecture/optimizer, 2.2 pp from formal DP noise. Settles the milestone-time architectural confound.
+
+- **Source JSONs:** `19_dp_sgd_arch_ablation.json`, `10_d3_dp_sgd.json`, `02_closed_set_reid.json`
+- **Script:** `tools/regenerate_figures.py::render_dp_sgd_arch_ablation`
+
+### `figures/21_a2_vs_rest.pdf`
+A2 cross-task re-ID with the probe trained on **resting-state** EEG (PhysioNet R01 + R02) instead of motor execution. Riemann logreg recovers 94.1% from rest alone — the cleanest negative for the "task-shared component" objection.
+
+- **Source JSON:** `21_a2_vs_rest.json`
+- **Script:** `tools/regenerate_figures.py::render_a2_vs_rest` (also written by `experiments/21` directly)
+
+### `figures/22_eegnet_age_seeds.pdf`
+3-panel 5-seed replication of the EEGNet age effect. Left: per-seed age p (Fisher's combined = 0.008). Middle: per-seed effect size (Δ = +0.093 ± 0.030, consistent direction). Right: decile gap per seed (0.78 ± 0.025, invariant).
+
+- **Source JSON:** `22_eegnet_age_seeds.json`
+- **Script:** `tools/regenerate_figures.py::render_eegnet_age_seeds`
+
+### `figures/23_d1_adaptive_attacker.pdf`
+D1 ad-hoc defenses under encoder fine-tune. Grouped bar (3 defenses × 2 attackers). PCA k=8 (0.357 → 0.660), noise σ=1.0 (0.180 → 0.640), channel-drop k=8 (0.391 → 0.758). All three end up *above* the no-defense baseline of 0.411 under fine-tune.
+
+- **Source JSON:** `23_d1_adaptive_attacker.json`
+- **Script:** `tools/regenerate_figures.py::render_d1_adaptive_attacker`
+
 ---
 
 ## Style conventions

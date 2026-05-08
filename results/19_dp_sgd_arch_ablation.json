@@ -1,0 +1,38 @@
+[
+  {
+    "victim": "eegnet_dpsgd",
+    "probe": "knn",
+    "n_subjects": 104,
+    "n_train_windows": 18720,
+    "n_test_windows": 9360,
+    "top1": 0.03290598290598291,
+    "top1_ci_low": 0.02905982905982906,
+    "top1_ci_high": 0.03685897435897436,
+    "top5": 0.11292735042735043,
+    "top10": 0.15918803418803418,
+    "chance_top1": 0.009615384615384616,
+    "configuration": "groupnorm_sgd_no_dp",
+    "n_epochs": 40,
+    "batch_size": 256,
+    "lr": 1.0,
+    "task_acc": 0.31698717948717947
+  },
+  {
+    "victim": "eegnet_dpsgd",
+    "probe": "logreg",
+    "n_subjects": 104,
+    "n_train_windows": 18720,
+    "n_test_windows": 9360,
+    "top1": 0.043696581196581194,
+    "top1_ci_low": 0.03920940170940171,
+    "top1_ci_high": 0.048183760683760686,
+    "top5": 0.14198717948717948,
+    "top10": 0.23408119658119658,
+    "chance_top1": 0.009615384615384616,
+    "configuration": "groupnorm_sgd_no_dp",
+    "n_epochs": 40,
+    "batch_size": 256,
+    "lr": 1.0,
+    "task_acc": 0.31698717948717947
+  }
+]

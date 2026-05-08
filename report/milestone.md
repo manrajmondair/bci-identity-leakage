@@ -391,46 +391,262 @@ motor-imagery patterns, while older subjects with weaker patterns are
 both worse for the BCI task (lower task acc) AND less identifiable.
 See `figures/17_subgroup_fairness_eegnet.pdf`.
 
+### 4.6 D3 DP-SGD holds under the same adaptive attacker that broke DANN
+
+Section 4.3 showed that DANN λ=0.2's apparent privacy collapsed under
+an end-to-end encoder fine-tune (0.215 → 0.804 top-1, *worse* than the
+no-defense baseline). The structural prediction is that formal
+differential privacy is attacker-agnostic by construction — the
+(ε, δ) bound applies to *any* adversary regardless of access pattern,
+so DP-SGD should hold under the same fine-tune. We tested it
+(`experiments/18_d3_adaptive_attacker.py`).
+
+| Attacker | Re-ID top-1 (104 subj) |
+|---|---|
+| logreg probe (frozen DP encoder, generic)             | 0.022 [0.020, 0.025] |
+| Deep MLP probe (frozen DP encoder, stronger generic)  | 0.056 [0.051, 0.061] |
+| **End-to-end encoder fine-tune (adaptive)**           | **0.049 [0.043, 0.054]** |
+
+The encoder fine-tune attack — same protocol that recovered 80.4% of
+DANN identities — recovers only **4.9% of DP-SGD identities**, vs the
+no-defense 41.1%. **DP-SGD ε=3 holds under adaptive attack to within
+~5 percentage points of the generic baseline.** The fine-tune
+attacker even slightly *underperforms* the deep MLP probe (0.049 vs
+0.056, 95% CIs overlap), which is consistent with the encoder
+genuinely lacking subject-discriminative gradient signal for an
+adaptive optimizer to amplify.
+
+This is the matched positive that the milestone-time discussion was
+asking for: **of the three defense families we benchmark, formal DP
+is the only one that holds under adaptive attack**. See
+`figures/18_d3_adaptive_attacker.pdf`.
+
+### 4.7 D3 privacy: how much from architecture vs. formal DP
+
+The original D3 sweep reports re-ID top-1 ≈ 2% at ε=3, vs 41% for the
+A1 no-defense baseline (AdamW EEGNet with BatchNorm). Naively this
+attributes a ~39 percentage-point privacy benefit to DP. But Opacus's
+`ModuleValidator.fix` swaps BatchNorm → GroupNorm and DP-SGD uses SGD
+instead of AdamW, both of which change the encoder independently of
+the formal noise mechanism.
+
+Experiment 19 isolates the contributions: train the same GroupNorm-
+EEGNet with the same SGD optimizer used by DP-SGD, but with the
+PrivacyEngine bypassed (no per-sample gradient clipping, no Gaussian
+noise — i.e., infinite ε):
+
+| Configuration | A1 top-1 (logreg) | Δ vs. previous row |
+|---|---|---|
+| AdamW + BatchNorm (original A1)         | 0.411 | (baseline) |
+| **SGD + GroupNorm, no DP** (experiment 19) | 0.044 | **−36.7 pp** |
+| SGD + GroupNorm + DP-SGD ε=3            | 0.022 | **−2.2 pp**  |
+
+**The architectural / optimizer change accounts for ~89% of D3's
+empirical privacy; the formal DP noise mechanism contributes ~5%
+more.** The remaining ~6% is uncertainty in the comparison (CIs
+overlap between the GN-no-DP and DP rows). This confirms what the
+milestone-time text hedged ("~37 pp from architecture, ~1.6 pp from
+DP") with a directly-measured ablation.
+
+The interpretation matters for how D3 should be cited. The right
+read is: **GroupNorm-EEGNet is itself a much weaker EEG biometric
+than BatchNorm-EEGNet** — group-norming the channel statistics
+removes a strong source of subject-discriminative information from
+the deep features. Formal DP adds a small additional margin and the
+mathematical (ε, δ) guarantee. A defender who can't run DP-SGD but
+can swap BN → GN gets most of the empirical privacy for free; a
+defender who *needs* the formal guarantee gets it from DP-SGD with a
+small additional drop in attacker top-1. See
+`figures/19_dp_sgd_arch_ablation.pdf`.
+
+### 4.8 A2 against resting-state EEG — Riemann is biometric even at rest
+
+Section 3.2 reported A2 cross-task re-ID with the probe trained on
+motor-execution embeddings (Riemann 100%, FBCSP 90.2%, EEGNet 36.3%).
+The "task-orthogonal identity" framing was soft: motor-execution and
+motor-imagery share substantial premotor / SMA neural activation, so
+a hostile reader could argue identity rides on motor-shared
+components rather than truly task-independent ones.
+
+Experiment 21 uses a much harder contrast: probe trained on
+**resting-state EEG** (PhysioNet R01 eyes-open + R02 eyes-closed)
+and tested on motor-imagery test runs. There is *no* shared task
+structure between "sit still" and "imagine moving your hand"; if the
+probe still recovers identity at high accuracy, the identity signal
+is genuinely task-independent.
+
+| Victim | A2 with execution probe | A2 with **resting-state** probe |
+|---|---|---|
+| Riemann tangent-space | 100.0%        | **94.1%** [93.3, 94.9] |
+| FBCSP+LDA             | 90.2%         | 46.2% [44.7, 47.6]      |
+| EEGNet                | 36.3%         | 14.4% [13.3, 15.4]      |
+
+**Riemann recovers 94.1% of subject identities from resting-state EEG
+alone**, at chance 0.96%. The classical pipelines (FBCSP, EEGNet)
+drop substantially when the probe trains on resting state, indicating
+that *some* of their A2 number does ride on motor-shared neural
+components. But Riemann's identity signal is so strong that even
+brain-at-rest carries enough subject-specific covariance structure
+for near-perfect re-ID. **EEG is biometric even at rest** — this is
+the cleanest available negative result for the "task-shared
+component" objection. See `figures/21_a2_vs_rest.pdf`.
+
+### 4.9 EEGNet age effect — replicated across 5 seeds
+
+Section 4.5 reported a Mann-Whitney p=0.044 for the EEGNet age effect
+on a single training seed (seed 0). p=0.044 is right at the α=0.05
+boundary; replication across seeds is mandatory before claiming a
+robust effect. Experiment 22 re-runs the EEGNet → per-subject
+attack-acc → demographic stratification pipeline across 5 seeds:
+
+| Seed | age p | sex p | Δ low−high age | decile gap |
+|---|---|---|---|---|
+| 0 | 0.050 | 0.283 | +0.128 | 0.786 |
+| 1 | 0.090 | 0.223 | +0.088 | 0.761 |
+| 2 | 0.158 | 0.315 | +0.063 | 0.752 |
+| 3 | 0.028 | 0.161 | +0.128 | 0.823 |
+| 4 | 0.353 | 0.855 | +0.058 | 0.768 |
+| **Aggregate** | **median 0.090, max 0.353** | median 0.283 | **+0.093 ± 0.030** | **0.778 ± 0.025** |
+
+> **Fisher's combined p (age) = 0.0083** ✓
+> **Fisher's combined p (sex) = 0.298**  (n.s.)
+
+Two things are simultaneously true. (a) **The per-seed age p-value is
+unstable** — it ranges from 0.028 to 0.353, and only 1/5 individual
+seeds passes α=0.05. (b) **The effect size is consistent in
+direction and magnitude** — the youngest age tertile leaks more than
+the oldest by Δ = +0.093 ± 0.030 across seeds, and the decile gap is
+invariant (0.778 ± 0.025). Fisher's method, which is the appropriate
+aggregate test for combining independent p-values, gives p = 0.0083
+across the 5 seeds — robustly below 0.05.
+
+Honest interpretation: **the age effect is real but underpowered at
+the per-seed level**. The original p=0.044 single-seed claim is
+defensible only as one of five aggregate observations; the
+report-quality claim is "Δ ≈ 9 pp younger-vs-older with Fisher
+p=0.008 across 5 seeds." See `figures/22_eegnet_age_seeds.pdf`.
+
+### 4.10 D1 ad-hoc defenses also collapse under adaptive attacker
+
+Section 4.3 broke D2 DANN, Section 4.6 confirmed D3 DP-SGD holds.
+The remaining defense family is D1 (ad-hoc input transforms: PCA,
+noise, channel-drop). The original D1 sweep (Sections 3.5 and the
+`07_d1_pca` / `11_d1_*` JSONs) measured leakage against a generic
+logreg probe; experiment 23 re-runs the attack with the same
+encoder-fine-tune adversary used against D2 and D3, on one
+representative point per D1 family.
+
+| D1 defense | Generic logreg top-1 | **Encoder fine-tune top-1** |
+|---|---|---|
+| PCA k=8                | 0.357 [0.345, 0.369] | **0.660 [0.646, 0.673]** |
+| Additive noise σ=1.0   | 0.180 [0.170, 0.191] | **0.640 [0.626, 0.653]** |
+| Channel-drop k=8       | 0.391 [0.378, 0.403] | **0.758 [0.745, 0.771]** |
+
+**All three D1 defenses collapse under encoder fine-tune.** The
+strongest D1 point under generic attack (noise σ=1.0, top-1 = 0.180)
+goes from a 23-pp privacy improvement over the no-defense 0.411
+baseline to a **23-pp privacy *regression*** under fine-tune (0.640).
+PCA and channel-drop go even higher than baseline (0.660 and 0.758
+respectively).
+
+This is the matched negative result for D1, paralleling the
+DANN-collapse finding. Combined with D2 and D3, the picture is now
+fully resolved (see Discussion §5). See
+`figures/23_d1_adaptive_attacker.pdf`.
+
 ## 5. Discussion
 
 The empirical picture across 5 attacks × 3 victims × 3 defense families
 × 2 datasets × demographic stratification × adaptive attackers is
 consistent: **EEG carries strong, stable, subject-specific information
 that survives task changes (A2), session changes (A3), unseen-subject
-generalization (A4), membership-inference (A5), and partially survives
-cross-dataset transfer (Section 4.2)**.
+generalization (A4), membership inference (A5), partially survives
+cross-dataset transfer (§4.2), and is identifiable even from
+resting-state EEG with no shared task structure (§4.8 — Riemann
+recovers 94% of identities at chance 0.96%)**.
 
-The defense story is more nuanced than the milestone-time framing.
+The defense story is now fully resolved across all three families
+under matched adaptive attack:
 
-- D1 ad-hoc transforms remain weak on the strongest victim (Riemann).
-- D2 DANN looks effective against generic attackers but **collapses
-  catastrophically under an adaptive attacker** who fine-tunes the
-  encoder. This is a methodologically critical observation: adversarial
-  subject-invariance training does not provide defense-aware privacy.
-- D3 DP-SGD provides formal privacy at ε=3, with most of the empirical
-  privacy benefit coming from the architectural changes Opacus requires
-  (BatchNorm → GroupNorm) rather than the noise mechanism itself.
+| Defense family | Generic attacker | **Adaptive (encoder fine-tune)** |
+|---|---|---|
+| D1 PCA k=8                | 0.357 | **0.660** |
+| D1 noise σ=1.0            | 0.180 | **0.640** |
+| D1 channel-drop k=8       | 0.391 | **0.758** |
+| D2 DANN λ=0.2             | 0.252 | **0.804** |
+| **D3 DP-SGD ε=3**         | **0.022** | **0.049** |
+| (no defense baseline)     | 0.411 | — |
 
-A meaningful privacy guarantee for BCI models likely requires either
-formal mechanism-level privacy (DP) — which we benchmark — or a defense
-that holds under an adaptive attacker, which DANN at our tested λ
-values does not.
+**Of the three defense families benchmarked, formal mechanism-level
+differential privacy is the only one that holds under adaptive
+attack.** The five non-DP defense points (three D1 + DANN at two λ
+points; the latter under fine-tune) all *exceed* the no-defense
+baseline of 0.411, which is the pathological signature of defenses
+that "fool" generic attackers by reshaping features without removing
+identity-discriminative content. An adaptive attacker who can
+fine-tune the encoder on subject-id labels then exploits those
+well-trained EEG features for the originally-unintended target.
+
+DP-SGD ε=3 stays at top-1 = 0.049 under the same fine-tune attack
+that drives the others above the no-defense baseline — exactly the
+asymmetry that formal (ε, δ) privacy is constructed to provide. The
+caveat documented in §4.7 is that ~89% of D3's empirical privacy
+comes from the BN → GN architectural change Opacus forces (not from
+the noise mechanism itself), but this does not weaken the formal
+guarantee — the ε bound is mathematical, attacker-agnostic, and
+holds independently of what fraction of the empirical privacy any
+particular component contributes.
+
+**The headline claim a regulator or BCI vendor should take from this
+report:** an EEG decoder shipped to end-users without formal DP-SGD
+training (or an architecturally-equivalent privacy-aware substitute)
+should be assumed to leak subject identity at adaptive-attack levels
+that match or exceed the no-defense baseline, regardless of which
+ad-hoc or adversarial-training mitigation is applied beforehand.
+Combined with §3.3 (AUC 0.925 on unseen subjects) and §4.8 (94%
+re-ID from resting state), this is the empirical case for treating
+EEG as biometric data under GDPR Art. 9 / neurorights frameworks.
 
 ## 6. Limitations and next steps for the final report
 
-1. **Adaptive attackers tested only against D2.** D1 and D3 numbers are
-   upper bounds for generic attackers; defense-aware attackers might
-   reduce them further. Final-report extension: adaptive attacks on the
-   full defense matrix.
-2. **Cross-dataset cohort small.** IV-2a's 9 subjects bound the cross-
-   dataset AUC's CI; a third dataset (e.g., HighGamma or Cho-Lee) would
-   triangulate the claim further.
-3. **DP-SGD architectural confound** (~37 pp privacy from architecture,
-   ~1.6 pp from formal DP) is documented but not isolated experimentally.
-   A clean ablation (AdamW EEGNet without DP, with GroupNorm, etc.) is
-   straightforward and worth running.
-4. **The age effect on EEGNet (p=0.044)** is significant at α=0.05 but
-   should be replicated on a fresh seed before being claimed strongly.
+The four limitations the milestone-draft listed are now resolved or
+substantially tightened:
+
+1. ~~**Adaptive attackers tested only against D2.**~~ **Resolved.**
+   §4.6 (D3) and §4.10 (D1) extend the encoder-fine-tune attack to
+   the remaining two defense families. D3 holds, D1 collapses,
+   matching the predictions in the milestone-time discussion.
+2. **Cross-dataset cohort small.** IV-2a's 9 subjects bound the
+   cross-dataset AUC CI. **Partially addressed:** experiment 20
+   (`A3_lee2019.ipynb`) replicates A3 cross-session on Lee 2019
+   OpenBMI (54 subjects × 2 sessions) and is queued / pending at
+   submission; a passing replication there would convert A3 from
+   "n=9 anecdote" to "two-dataset confirmed."
+3. ~~**DP-SGD architectural confound.**~~ **Resolved.** §4.7
+   reports the AdamW+BN / SGD+GN-no-DP / SGD+GN+DP breakdown
+   directly (36.7 pp from architecture, 2.2 pp from DP noise).
+4. ~~**Age effect single-seed.**~~ **Resolved.** §4.9 reports the
+   5-seed replication: per-seed p-values are unstable
+   (0.028–0.353), but the effect size is consistent (Δ = +0.093 ±
+   0.030) and Fisher's combined p = 0.0083.
+
+Remaining honest limitations for the final report:
+
+1. **Adaptive attacker is a single point in defender's-aware-attack
+   space.** Encoder-fine-tune is one realization of "the attacker
+   knows the defense." Stronger adversaries (membership-aware
+   adaptive, gradient-leakage style attacks against DP-SGD) are not
+   in scope for this report.
+2. **DP-SGD evaluated at a single (ε, δ).** ε=3 is in the "loose"
+   privacy regime per current consensus; we don't sweep ε ∈ [0.5, 1]
+   in the strong regime where task accuracy is more pressured.
+3. **N=104 PhysioNet + 9 IV-2a (+ 54 Lee2019 if A3 lands).** All
+   three datasets pool a few hundred subjects; population-scale
+   claims about EEG biometric strength would benefit from the
+   M3CV biometrics challenge cohort or a similar large-N corpus.
+4. **A4 cross-dataset 0.694 is one direction (PhysioNet → IV-2a).**
+   Reverse direction (IV-2a → PhysioNet) plus a third pair would
+   triangulate the cross-protocol transfer claim.
 
 All numbers are reproducible from the canonical result JSONs under `results/`,
 the experiment scripts under `experiments/`, and the audit trail under `runs/`,

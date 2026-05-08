@@ -30,30 +30,42 @@ Every header is anonymized identically: `his_id='X'`, `sex=0` (unknown),
 independent feature** for cross-checking against OpenNeuro.
 
 The only subject-unique numeric signal locally available is per-run
-recording duration. We computed a 6-vector duration fingerprint per
-subject across the imagery runs (4, 6, 8, 10, 12, 14):
+recording duration. We computed a 14-vector duration fingerprint per
+subject across all 14 PhysioNet runs (R01–R14):
 
 ```text
-durations_seconds  -> # subjects sharing this vector
-122.9938 × 6       -> 72 subjects
-124.9938 × 6       -> 22 subjects
-123.9938 × 6       ->  3 subjects
-mixed              ->  3 subjects
-4 unique vectors   ->  4 subjects
+14-run fingerprint cluster analysis
+  68 subjects share the 122.99-s baseline pattern
+  21 subjects share the 124.99-s baseline pattern
+   3 subjects share one less-common pattern
+   3 subjects share another less-common pattern
+   2 subjects share another
+   7 subjects have UNIQUE 14-vectors (point-wise verifiable)
+  -- 12 distinct duration vectors total --
 ```
 
-Recording duration is essentially constant within the protocol — only
-4 of 104 subjects have a fingerprint unique enough to verify
-independently. **Local-only empirical mapping verification is not
-feasible at this dataset's level of anonymization.**
+Recording duration is mostly determined by the recording protocol
+rather than by individual subjects: 89 of 104 subjects fall into one
+of the two largest clusters. Only **7 of 104 subjects have a
+fingerprint unique enough to verify independently**, but every
+subject can be cluster-membership verified (which catches the most
+likely failure mode: silent re-indexing within a cluster being
+indistinguishable from no re-indexing, while re-indexing *across*
+clusters would be detectable for any subject whose new cluster
+assignment doesn't match).
 
-The full per-subject fingerprint vector is stored in
-`physionet_duration_fingerprint.json` so anyone with the OpenNeuro BIDS
-dataset downloaded can compute the same vector from
-`sub-XXX/ses-1/eeg/sub-XXX_ses-1_task-motorImagery_eeg.json`'s
-`RecordingDuration` field and confirm the 4 verifiable subjects (and,
-for the larger collision groups, confirm membership in the same
-duration-cluster).
+The full per-subject 14-vector fingerprint is stored in
+`physionet_duration_fingerprint.json` so anyone with the OpenNeuro
+BIDS dataset downloaded can compute the same vector from each
+subject's BIDS sidecars (`sub-XXX/ses-1/eeg/*_eeg.json` →
+`RecordingDuration`) and confirm:
+
+1. **Point-wise** for the 7 unique-fingerprint subjects.
+2. **Cluster-membership** for the remaining 97 subjects (the right
+   subject is in the right duration cluster).
+
+A combined point-wise + cluster check is the strongest local-only
+mapping verification this dataset's anonymization permits.
 
 ## Structural argument
 
@@ -84,13 +96,13 @@ Anyone wanting a stronger check can:
 
 1. Download OpenNeuro ds004362 via DataLad or the web interface
    (≈ 1.7 GB).
-2. For each `sub-XXX` and the 6 imagery runs, parse
-   `RecordingDuration` from the BIDS sidecar JSON.
+2. For each `sub-XXX` and all 14 PhysioNet runs, parse
+   `RecordingDuration` from the BIDS sidecar JSON to build a
+   14-vector per subject.
 3. Compare against `physionet_duration_fingerprint.json` per
-   subject. The 4 unique-fingerprint subjects (S2 in the
-   "mixed" group plus the 3 isolated singletons) provide
-   point-wise verification; the 100 cluster-shared subjects
-   provide cluster-membership verification.
+   subject. The 7 unique-fingerprint subjects provide
+   point-wise verification; the remaining 97 cluster-shared
+   subjects provide cluster-membership verification.
 4. Bonus: parse `Gender` and `Age` from each
    `sub-XXX/ses-1/eeg/sub-XXX_sessions.tsv` (if present) and
    confirm they match `participants.tsv`.

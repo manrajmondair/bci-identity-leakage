@@ -530,6 +530,288 @@ def render_subgroup_fairness_eegnet():
     print("regenerated figures/17_subgroup_fairness_eegnet.pdf")
 
 
+# ---------------------------------------------------------------------------
+# Extension v2 figures (D3 adaptive, DP-SGD architecture ablation,
+# EEGNet age 5-seed replication, D1 adaptive). 21_a2_vs_rest is rendered
+# by experiments/21 directly.
+# ---------------------------------------------------------------------------
+def render_d3_adaptive_attacker():
+    """experiments/18 — DP-SGD ε=3 against logreg, deep-MLP, encoder-fine-tune.
+
+    Mirror of render_adaptive_attacker (DANN λ=0.2). Headline: where DANN
+    collapsed under encoder fine-tune (0.21 generic → 0.80 fine-tune), DP
+    holds (0.022 generic → 0.049 fine-tune; 5× chance vs DANN's 80×).
+    """
+    p = RESULTS_DIR / "18_d3_adaptive_attacker.json"
+    if not p.exists():
+        return
+    adv = json.loads(p.read_text())
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+
+    # Format: A1 baseline (no defense) is point reference, then 3 attacks
+    a1_no_def = 0.411  # from results/02_closed_set_reid.json EEGNet logreg
+    bars_label = ["A1 baseline\n(no defense)\n0.411",
+                  "DP-SGD ε=3\nlogreg probe\n(generic)",
+                  "DP-SGD ε=3\ndeep MLP probe\n(stronger generic)",
+                  "DP-SGD ε=3\nencoder fine-tune\n(adaptive)"]
+    top1 = [a1_no_def,
+            adv["attacks"][0]["top1"],
+            adv["attacks"][1]["top1"],
+            adv["attacks"][2]["top1"]]
+    lo = [0.0,
+          adv["attacks"][0]["top1"] - adv["attacks"][0]["top1_ci_low"],
+          adv["attacks"][1]["top1"] - adv["attacks"][1]["top1_ci_low"],
+          adv["attacks"][2]["top1"] - adv["attacks"][2]["top1_ci_low"]]
+    hi = [0.0,
+          adv["attacks"][0]["top1_ci_high"] - adv["attacks"][0]["top1"],
+          adv["attacks"][1]["top1_ci_high"] - adv["attacks"][1]["top1"],
+          adv["attacks"][2]["top1_ci_high"] - adv["attacks"][2]["top1"]]
+    colors = ["#7f8c8d", "#6a51a3", "#9e9ac8", "#54278f"]
+    bars = ax.bar(bars_label, top1, yerr=[lo, hi], color=colors,
+                  edgecolor="white", linewidth=0.8,
+                  error_kw=dict(elinewidth=0.6, capsize=2, capthick=0.6))
+    for b, v in zip(bars, top1):
+        ax.text(b.get_x() + b.get_width() / 2, v + 0.015, f"{v:.3f}",
+                ha="center", fontsize=9, fontweight="bold")
+    ax.axhline(0.0096, color="#c0392b", linewidth=0.6, linestyle="--",
+               label="chance = 0.0096")
+    ax.set_ylabel("Re-ID top-1 (104 PhysioNet subjects)")
+    ax.set_ylim(0, 0.5)
+    ax.set_title(f"DP-SGD (target ε=3, final ε={adv['final_epsilon']:.2f}) "
+                 f"holds under adaptive attack — formal DP is attacker-agnostic")
+    ax.legend(frameon=False, fontsize=8, loc="upper right")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "18_d3_adaptive_attacker.pdf",
+                dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/18_d3_adaptive_attacker.pdf")
+
+
+def render_dp_sgd_arch_ablation():
+    """experiments/19 — three-bar breakdown of D3's privacy.
+
+    AdamW + BatchNorm  → architecture/optimizer change → SGD + GroupNorm (no DP)
+                                                       → SGD + GroupNorm + DP ε=3.
+    Most of the privacy is from architecture; only ~2 pp from formal DP noise.
+    """
+    p_arch = RESULTS_DIR / "19_dp_sgd_arch_ablation.json"
+    p_d3 = RESULTS_DIR / "10_d3_dp_sgd.json"
+    p_a1 = RESULTS_DIR / "02_closed_set_reid.json"
+    if not (p_arch.exists() and p_d3.exists() and p_a1.exists()):
+        return
+    arch_rows = json.loads(p_arch.read_text())
+    arch = next(r for r in arch_rows if r["probe"] == "logreg")
+    d3_rows = json.loads(p_d3.read_text())
+    dp = next(r for r in d3_rows
+              if r.get("target_epsilon") == 3.0 and r["probe"] == "logreg")
+    a1_rows = json.loads(p_a1.read_text())
+    a1 = next(r for r in a1_rows
+              if r["victim"] == "eegnet" and r["probe"] == "logreg")
+
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    labels = ["AdamW + BatchNorm\n(A1 baseline)",
+              "SGD + GroupNorm\nno DP (this paper)",
+              f"SGD + GroupNorm\nDP-SGD ε=3 (final {dp['final_epsilon']:.2f})"]
+    top1 = [a1["top1"], arch["top1"], dp["top1"]]
+    lo = [a1["top1"] - a1["top1_ci_low"],
+          arch["top1"] - arch["top1_ci_low"],
+          dp["top1"] - dp["top1_ci_low"]]
+    hi = [a1["top1_ci_high"] - a1["top1"],
+          arch["top1_ci_high"] - arch["top1"],
+          dp["top1_ci_high"] - dp["top1"]]
+    colors = ["#7f8c8d", "#bcbddc", "#54278f"]
+    bars = ax.bar(labels, top1, yerr=[lo, hi], color=colors,
+                  edgecolor="white", linewidth=0.8,
+                  error_kw=dict(elinewidth=0.6, capsize=2, capthick=0.6))
+    for b, v in zip(bars, top1):
+        ax.text(b.get_x() + b.get_width() / 2, v + 0.012, f"{v:.3f}",
+                ha="center", fontsize=10, fontweight="bold")
+    ax.axhline(0.0096, color="#c0392b", linewidth=0.6, linestyle="--",
+               label="chance = 0.0096")
+    arch_delta = a1["top1"] - arch["top1"]
+    noise_delta = arch["top1"] - dp["top1"]
+    ax.set_ylabel("A1 closed-set re-ID top-1 (104 subjects)")
+    ax.set_ylim(0, 0.5)
+    ax.set_title(f"D3 privacy breakdown — architecture: -{arch_delta*100:.1f} pp,  "
+                 f"DP noise: -{noise_delta*100:.1f} pp")
+    ax.legend(frameon=False, fontsize=8, loc="upper right")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "19_dp_sgd_arch_ablation.pdf",
+                dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/19_dp_sgd_arch_ablation.pdf")
+
+
+def render_eegnet_age_seeds():
+    """experiments/22 — 5-seed replication of the EEGNet age effect.
+
+    Three panels:
+      (a) per-seed age p-values + α=0.05 threshold + Fisher's combined p
+      (b) per-seed age effect size (Δ low - high) — should be consistent
+      (c) decile gap per seed — invariant to seed choice
+    """
+    p = RESULTS_DIR / "22_eegnet_age_seeds.json"
+    if not p.exists():
+        return
+    sf = json.loads(p.read_text())
+    per_seed = sf["per_seed"]
+    agg = sf["aggregate"]
+
+    seeds = [r["seed"] for r in per_seed]
+    age_p = [r["age_p"] for r in per_seed]
+    age_diff = [r["age_diff_low_minus_high"] for r in per_seed]
+    decile = [r["decile_gap"] for r in per_seed]
+
+    plt.rcParams.update(_setup_axes())
+    fig, axes = plt.subplots(1, 3, figsize=(10.5, 3.4))
+
+    # Panel A: per-seed age p
+    ax = axes[0]
+    bars = ax.bar([f"s{s}" for s in seeds], age_p, color="#54278f", alpha=0.7,
+                  edgecolor="white", linewidth=0.5)
+    ax.axhline(0.05, color="#c0392b", linewidth=0.7, linestyle="--",
+               label="α=0.05")
+    for b, v in zip(bars, age_p):
+        ax.text(b.get_x() + b.get_width()/2, v + 0.005, f"{v:.3f}",
+                ha="center", fontsize=8)
+    ax.set_ylabel("age effect p (Mann-Whitney)")
+    ax.set_xlabel("seed")
+    ax.set_ylim(0, max(age_p) * 1.25)
+    ax.set_title(f"Per-seed age p\nFisher combined = {agg['fisher_age_p']:.4f}")
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+
+    # Panel B: effect size (consistent direction)
+    ax = axes[1]
+    ax.bar([f"s{s}" for s in seeds], age_diff, color="#9e9ac8", alpha=0.85,
+           edgecolor="white", linewidth=0.5)
+    ax.axhline(agg["age_diff_mean"], color="#54278f", linewidth=1.2,
+               label=f"mean = {agg['age_diff_mean']:.3f}")
+    ax.axhline(0.0, color="#7f8c8d", linewidth=0.4)
+    for s, d in zip(seeds, age_diff):
+        ax.text(s, d + 0.005, f"{d:+.3f}", ha="center", fontsize=8)
+    ax.set_ylabel("Δ (age low − age high)")
+    ax.set_xlabel("seed")
+    ax.set_title(f"Age-effect direction is consistent\n"
+                 f"Δ = {agg['age_diff_mean']:+.3f} ± {agg['age_diff_std']:.3f}")
+    ax.legend(frameon=False, fontsize=8, loc="lower right")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+
+    # Panel C: decile gap per seed
+    ax = axes[2]
+    ax.bar([f"s{s}" for s in seeds], decile, color="#bcbddc", alpha=0.85,
+           edgecolor="white", linewidth=0.5)
+    ax.axhline(agg["decile_gap_mean"], color="#54278f", linewidth=1.2,
+               label=f"mean = {agg['decile_gap_mean']:.3f}")
+    ax.set_ylabel("decile gap (most − least leaked)")
+    ax.set_xlabel("seed")
+    ax.set_ylim(0, 1.0)
+    ax.set_title(f"Decile gap is invariant to seed\n"
+                 f"= {agg['decile_gap_mean']:.3f} ± {agg['decile_gap_std']:.3f}")
+    ax.legend(frameon=False, fontsize=8, loc="upper right")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+
+    fig.suptitle("EEGNet age effect across 5 seeds — direction consistent, "
+                 "per-seed p-value noisy (Fisher's aggregate confirms)",
+                 y=1.02, fontsize=10)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "22_eegnet_age_seeds.pdf",
+                dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/22_eegnet_age_seeds.pdf")
+
+
+def render_d1_adaptive_attacker():
+    """experiments/23 — D1 ad-hoc defenses under encoder fine-tune.
+
+    Grouped bar chart per defense: generic logreg vs encoder fine-tune.
+    All three D1 defenses collapse under fine-tune (matched-negative to
+    DANN, in contrast to D3 DP which holds).
+    """
+    p = RESULTS_DIR / "23_d1_adaptive_attacker.json"
+    if not p.exists():
+        return
+    rows = json.loads(p.read_text())["defenses"]
+    defenses = ["pca_k8", "noise_sigma1.0", "channel_drop_k8"]
+    pretty = {"pca_k8": "PCA k=8", "noise_sigma1.0": "noise σ=1.0",
+              "channel_drop_k8": "channel-drop k=8"}
+
+    by = {}
+    for r in rows:
+        by[(r["defense"], r["attack"])] = r
+
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(7.6, 3.8))
+
+    x = np.arange(len(defenses))
+    w = 0.36
+    generic = [by[(d, "logreg_probe")]["top1"] for d in defenses]
+    finetune = [by[(d, "encoder_finetune")]["top1"] for d in defenses]
+    g_lo = [by[(d, "logreg_probe")]["top1"] - by[(d, "logreg_probe")]["top1_ci_low"]
+            for d in defenses]
+    g_hi = [by[(d, "logreg_probe")]["top1_ci_high"] - by[(d, "logreg_probe")]["top1"]
+            for d in defenses]
+    f_lo = [by[(d, "encoder_finetune")]["top1"] - by[(d, "encoder_finetune")]["top1_ci_low"]
+            for d in defenses]
+    f_hi = [by[(d, "encoder_finetune")]["top1_ci_high"] - by[(d, "encoder_finetune")]["top1"]
+            for d in defenses]
+
+    b1 = ax.bar(x - w/2, generic, w, label="logreg probe (generic)",
+                color="#bcbddc", edgecolor="white", linewidth=0.6,
+                yerr=[g_lo, g_hi],
+                error_kw=dict(elinewidth=0.5, capsize=2))
+    b2 = ax.bar(x + w/2, finetune, w, label="encoder fine-tune (adaptive)",
+                color="#54278f", edgecolor="white", linewidth=0.6,
+                yerr=[f_lo, f_hi],
+                error_kw=dict(elinewidth=0.5, capsize=2))
+    for bs, vs in [(b1, generic), (b2, finetune)]:
+        for b, v in zip(bs, vs):
+            ax.text(b.get_x() + b.get_width()/2, v + 0.015, f"{v:.3f}",
+                    ha="center", fontsize=8.5, fontweight="bold")
+    ax.axhline(0.411, color="#34495e", linewidth=0.6, linestyle="-.",
+               label="A1 no-defense baseline = 0.411")
+    ax.axhline(0.0096, color="#c0392b", linewidth=0.6, linestyle="--",
+               label="chance = 0.0096")
+    ax.set_xticks(x)
+    ax.set_xticklabels([pretty[d] for d in defenses])
+    ax.set_ylabel("Re-ID top-1 (104 PhysioNet subjects)")
+    ax.set_ylim(0, 0.9)
+    ax.set_title("D1 ad-hoc defenses collapse under adaptive attacker "
+                 "(all three above no-defense baseline)")
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "23_d1_adaptive_attacker.pdf",
+                dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/23_d1_adaptive_attacker.pdf")
+
+
+def render_a2_vs_rest():
+    """experiments/21 — A2 with probe trained on resting-state EEG.
+
+    Renders a closed-set bar chart from the canonical JSON; mirrors the
+    A1/A2/A3 layout. (The original experiment also writes the figure
+    directly, but having the regen path here keeps the one-command
+    rebuild self-contained.)
+    """
+    p = RESULTS_DIR / "21_a2_vs_rest.json"
+    if not p.exists():
+        return
+    rows = json.loads(p.read_text())
+    n = rows[0]["n_subjects"]
+    closed_set_bar_chart(
+        rows, FIGURES_DIR / "21_a2_vs_rest.pdf",
+        title=f"A2 cross-task re-ID  ({n} subj)\n"
+              f"probe trained on RESTING-STATE, tested on motor-imagery",
+    )
+    print("regenerated figures/21_a2_vs_rest.pdf")
+
+
 def main() -> None:
     print("Regenerating all figures from result JSONs ...\n")
     for fn in (
@@ -546,6 +828,13 @@ def main() -> None:
         render_adaptive_attacker,
         render_a5_classical,
         render_subgroup_fairness_eegnet,
+        # Extension batch v2 (D3 holds under fine-tune; arch ablation;
+        # 5-seed age replication; D1 adaptive collapse; rest-state A2)
+        render_d3_adaptive_attacker,
+        render_dp_sgd_arch_ablation,
+        render_eegnet_age_seeds,
+        render_d1_adaptive_attacker,
+        render_a2_vs_rest,
         # Pareto last so it sees every defense JSON if newly added
         render_pareto,
     ):

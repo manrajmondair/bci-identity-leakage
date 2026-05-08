@@ -1,0 +1,43 @@
+{
+  "victim": "DPSGD_eps=3.0",
+  "target_epsilon": 3.0,
+  "final_epsilon": 2.996188241361091,
+  "delta": 1e-05,
+  "max_grad_norm": 1.0,
+  "task_acc": 0.2950854700854701,
+  "attacks": [
+    {
+      "attack": "logreg_probe",
+      "top1": 0.02232905982905983,
+      "top1_ci_low": 0.019658119658119658,
+      "top1_ci_high": 0.025427350427350427,
+      "top5": 0.08803418803418804,
+      "top10": 0.1545940170940171,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616
+    },
+    {
+      "attack": "deep_mlp_probe",
+      "top1": 0.05587606837606838,
+      "top1_ci_low": 0.05074786324786325,
+      "top1_ci_high": 0.06079059829059829,
+      "top5": 0.18365384615384617,
+      "top10": 0.28878205128205126,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616
+    },
+    {
+      "attack": "encoder_finetune",
+      "top1": 0.04861111111111111,
+      "top1_ci_low": 0.04348290598290598,
+      "top1_ci_high": 0.05363247863247863,
+      "top5": 0.17307692307692307,
+      "top10": 0.2808760683760684,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616
+    }
+  ]
+}

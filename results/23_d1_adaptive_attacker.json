@@ -1,0 +1,82 @@
+{
+  "defenses": [
+    {
+      "defense": "pca_k8",
+      "attack": "logreg_probe",
+      "top1": 0.35673076923076924,
+      "top1_ci_low": 0.3446474358974359,
+      "top1_ci_high": 0.3688034188034188,
+      "top5": 0.67008547008547,
+      "top10": 0.8108974358974359,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616,
+      "task_acc": 0.3631410256410256
+    },
+    {
+      "defense": "pca_k8",
+      "attack": "encoder_finetune",
+      "top1": 0.6601495726495726,
+      "top1_ci_low": 0.6463648504273505,
+      "top1_ci_high": 0.6731917735042735,
+      "top5": 0.9261752136752137,
+      "top10": 0.9739316239316239,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616,
+      "task_acc": 0.3631410256410256
+    },
+    {
+      "defense": "noise_sigma1.0",
+      "attack": "logreg_probe",
+      "top1": 0.18034188034188034,
+      "top1_ci_low": 0.16965544871794871,
+      "top1_ci_high": 0.1909188034188034,
+      "top5": 0.4091880341880342,
+      "top10": 0.5511752136752137,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616,
+      "task_acc": 0.3317307692307692
+    },
+    {
+      "defense": "noise_sigma1.0",
+      "attack": "encoder_finetune",
+      "top1": 0.6396367521367521,
+      "top1_ci_low": 0.6262820512820513,
+      "top1_ci_high": 0.6528872863247863,
+      "top5": 0.8990384615384616,
+      "top10": 0.9582264957264958,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616,
+      "task_acc": 0.3317307692307692
+    },
+    {
+      "defense": "channel_drop_k8",
+      "attack": "logreg_probe",
+      "top1": 0.3907051282051282,
+      "top1_ci_low": 0.37766826923076924,
+      "top1_ci_high": 0.40342414529914533,
+      "top5": 0.705982905982906,
+      "top10": 0.8319444444444445,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616,
+      "task_acc": 0.3106837606837607
+    },
+    {
+      "defense": "channel_drop_k8",
+      "attack": "encoder_finetune",
+      "top1": 0.7581196581196581,
+      "top1_ci_low": 0.7452991452991453,
+      "top1_ci_high": 0.7709428418803419,
+      "top5": 0.9321581196581197,
+      "top10": 0.9735042735042735,
+      "n_test_windows": 9360,
+      "n_subjects": 104,
+      "chance_top1": 0.009615384615384616,
+      "task_acc": 0.3106837606837607
+    }
+  ]
+}
