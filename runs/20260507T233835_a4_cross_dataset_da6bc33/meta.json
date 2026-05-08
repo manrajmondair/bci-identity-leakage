@@ -1,0 +1,15 @@
+{
+  "run_id": "20260507T233835_a4_cross_dataset_da6bc33",
+  "experiment": "experiments.13_a4_cross_dataset",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "da6bc334786531b2499f5bc0052a46f17c8bf05d",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.113+-x86_64-with-glibc2.35",
+  "torch_version": "2.10.0+cu128",
+  "completed_at_utc": "2026-05-07T23:38:35Z",
+  "outputs": [
+    "results/13_a4_cross_dataset.json"
+  ]
+}

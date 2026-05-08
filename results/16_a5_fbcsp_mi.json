@@ -1,0 +1,12 @@
+{
+  "victim_family": "fbcsp",
+  "n_shadows": 12,
+  "n_subjects": 104,
+  "n_target_members": 52,
+  "n_target_nonmembers": 52,
+  "auc": 0.8187869822485208,
+  "auc_ci_low": 0.7288316685164632,
+  "auc_ci_high": 0.8919114877589452,
+  "advantage": 0.5,
+  "advantage_threshold": 0.4933558877710981
+}

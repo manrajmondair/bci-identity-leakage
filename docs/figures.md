@@ -89,6 +89,36 @@ W5.1 subgroup fairness — four panels: per-subject A1 attack-acc histogram (FBC
 ### `figures/03_within_subject_reid.pdf` (deferred experiment)
 Within-subject A1b figure. Only present because the script that produced it (`experiments/03_within_subject_reid.py`) runs end-to-end on smoke data; the experiment itself is deferred from the milestone (see `runs/` audit).
 
+### `figures/13_a4_cross_dataset.pdf`
+Bar chart comparing A4 within-dataset AUC (0.925) to multi-seed mean (0.934) and cross-dataset (0.694, PhysioNet → IV-2a). Visualizes the headline-vs-cross-protocol gap.
+
+- **Source JSONs:** `06_a4_open_set.json`, `13_a4_cross_dataset.json`, `14_a4_multi_seed.json`
+- **Script:** `tools/regenerate_figures.py::render_a4_cross_dataset`
+
+### `figures/14_a4_multi_seed.pdf`
+A4 AUC across 5 random subject splits with per-seed bootstrap CI and the cross-seed mean ± std.
+
+- **Source JSON:** `14_a4_multi_seed.json`
+- **Script:** `tools/regenerate_figures.py::render_a4_multi_seed`
+
+### `figures/15_d2_adaptive_attacker.pdf` ⭐
+**The "DANN collapses under adaptive attacker" figure.** Bar chart comparing 4 attacker strengths against the DANN λ=0.2 victim: A1 baseline (0.41), logreg probe (0.25), deep MLP probe (0.36), end-to-end encoder fine-tune (**0.80**).
+
+- **Source JSON:** `15_d2_adaptive_attacker.json`
+- **Script:** `tools/regenerate_figures.py::render_adaptive_attacker`
+
+### `figures/16_a5_classical.pdf`
+MI AUC across the three victim families (EEGNet, FBCSP, Riemann). Riemann at ceiling (1.0).
+
+- **Source JSONs:** `08_a5_membership_inference.json`, `16_a5_riemann_mi.json`, `16_a5_fbcsp_mi.json`
+- **Script:** `tools/regenerate_figures.py::render_a5_classical`
+
+### `figures/17_subgroup_fairness_eegnet.pdf`
+4-panel EEGNet subgroup fairness — same layout as the FBCSP/Riemann fairness figure. Hist of per-subject leakage; task vs attack scatter; sex boxplot; age tertile boxplot. Decile gap 0.78, age p=0.044.
+
+- **Source JSON:** `17_subgroup_fairness_eegnet.json`
+- **Script:** `tools/regenerate_figures.py::render_subgroup_fairness_eegnet`
+
 ---
 
 ## Style conventions

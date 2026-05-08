@@ -1,0 +1,12 @@
+{
+  "victim_family": "riemann",
+  "n_shadows": 20,
+  "n_subjects": 104,
+  "n_target_members": 52,
+  "n_target_nonmembers": 52,
+  "auc": 1.0,
+  "auc_ci_low": 0.9999999999999999,
+  "auc_ci_high": 1.0,
+  "advantage": 1.0,
+  "advantage_threshold": 0.9642331739385654
+}

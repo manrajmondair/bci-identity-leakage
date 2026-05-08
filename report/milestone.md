@@ -227,20 +227,153 @@ ad-hoc methods (PCA, additive noise, channel reduction) are dominated by DANN
 at λ=0.1 in our benchmarks — DANN buys 14 percentage points of privacy at zero
 task cost; no ad-hoc point we tested matches that.
 
-## 5. Limitations and next steps for the final report
+## 4. Robustness extensions and an honest update on DANN
 
-1. **D3 DP-SGD** is in progress (a parametrize-pickle bug in Opacus's
-   `ModuleValidator.fix` was discovered and patched on 2026-05-07; rerun
-   pending). Final report will include formal (ε, δ) results.
-2. **Demographic fairness on PhysioNet is structurally not possible**
-   (anonymized headers). Replacing the originally-planned sex/age stratification
-   with per-subject heterogeneity analysis (Figure 2). For demographic
-   stratification we would need a different dataset or de-anonymized metadata.
-3. **A4 open-set generalization** uses a single train/test split. Robustness
-   across alternate splits is straightforward and will land for the final.
-4. **Cross-dataset transfer** (does an embedding trained on PhysioNet identify
-   IV-2a subjects?) is a natural extension but out of scope for the milestone.
+### 4.1 A4 robustness across train/test splits
+
+The headline 0.925 AUC was reported for a single split. We re-ran the open-set
+verification across **5 random splits** of the 104 subjects into 80 train /
+24 held-out, retraining the contrastive embedding from scratch each time
+(22 epochs per seed). Cross-seed:
+
+> **AUC = 0.934 ± 0.020** (range 0.901–0.950)
+> **EER = 0.136 ± 0.032**
+
+The per-seed bootstrap CIs are tight (~0.005 each) and the across-seed std
+is ~0.02. The headline AUC is robust to split choice; reviewers cannot
+dismiss it as cherry-picking. See `figures/14_a4_multi_seed.pdf`.
+
+### 4.2 A4 cross-dataset transfer (PhysioNet → BCI IV-2a)
+
+We re-trained the same contrastive embedding on PhysioNet's 22-channel
+subset matching IV-2a's montage (resampled to 160 Hz to match), then
+evaluated verification on **BCI IV-2a session-1** — completely different
+recording rig, country, sampling rate, and cognitive-task class set:
+
+> **AUC = 0.694** [0.690, 0.699]
+> **EER = 0.356**
+
+This is meaningfully above random (0.5) but a substantial drop from the
+within-PhysioNet 0.925. Honest interpretation: the EEG-as-biometric template
+**partially transfers across recording protocols** — there is real
+identity signal that survives the cross-dataset shift — but it is not
+fully protocol-invariant at this scale. The "voice-biometric grade" framing
+applies within a recording protocol; cross-protocol the threat is weaker
+but not absent. See `figures/13_a4_cross_dataset.pdf`.
+
+### 4.3 D2 DANN under an adaptive attacker (the most consequential finding)
+
+Section 3.5 reported that DANN λ=0.2 reduces re-ID top-1 from 0.411 to
+0.215 — a 20-percentage-point privacy gain at zero task cost. That number
+was measured against a **generic** logistic-regression probe.
+
+We re-ran the attack against three increasingly adaptive attackers, all
+white-box on the trained DANN encoder (`experiments/15_d2_adaptive_attacker.py`):
+
+| Attacker | Re-ID top-1 (104 subj) |
+|---|---|
+| logreg probe (the original generic baseline)            | 0.252 [0.241, 0.263] |
+| Deep MLP probe on the **frozen** encoder                | 0.357 [0.345, 0.369] |
+| **End-to-end encoder fine-tune for re-ID**              | **0.804 [0.792, 0.815]** |
+
+The fine-tune attack — initialize from the DANN-trained weights, replace
+the task head with a 104-way subject classifier, retrain end-to-end —
+recovers leakage to **80.4% top-1**, *higher than the no-defense A1
+baseline of 41.1%*. DANN's privacy claim was an artifact of the weakness
+of the generic attacker.
+
+**Interpretation.** DANN's adversarial subject-invariance pressure shapes
+the encoder to give a non-adapted attacker little to work with. But the
+encoder's learned representations are still rich features of the EEG;
+when the attacker can adapt the encoder weights, those features become
+*more* useful for re-ID, not less, because they are well-trained EEG
+features even though they were not chosen with re-ID in mind.
+
+**Implication for the report.** We should frame DANN as a **weak privacy
+defense under adaptive threat** rather than a strict win. The privacy-
+utility curve in Figure 1 is conditioned on "the attacker has not
+specifically targeted DANN-trained models"; under an adaptive attacker
+DANN is brittle. This is exactly why testing privacy claims against
+adaptive attackers is the methodologically correct move. See
+`figures/15_d2_adaptive_attacker.pdf`.
+
+### 4.4 Membership inference across all three victim families
+
+Original A5 reported MI AUC = 0.878 on EEGNet. Extending the same Shokri-
+style shadow-model methodology to FBCSP+LDA and Riemann tangent-space:
+
+| Victim | Shadows | MI AUC (95% CI) | Advantage (TPR − FPR) |
+|---|---|---|---|
+| EEGNet                | 20 | 0.878 [0.803, 0.943] | 0.635 |
+| FBCSP+LDA             | 12 | 0.819 [0.729, 0.892] | 0.500 |
+| **Riemann tangent-space** | 20 | **1.000** [1.000, 1.000] | **1.000** |
+
+Riemann's per-subject log-loss on members vs non-members is so cleanly
+separable that the attack is trivially perfect. This mirrors A1's
+pattern: Riemann is the most identifying victim by every metric we
+have. See `figures/16_a5_classical.pdf`.
+
+### 4.5 EEGNet subgroup fairness
+
+EEGNet shows substantially **larger heterogeneity** than the classical
+victims (decile gap **0.783** vs FBCSP's 0.490, Riemann at ceiling), and
+the age effect that was marginal on FBCSP is now formally significant
+on EEGNet:
+
+| Comparison | Δ | p (Mann-Whitney) |
+|---|---|---|
+| Sex M (n=41) vs F (n=56) | +0.060 | 0.288 (n.s.) |
+| Age low (n=34) vs high (n=30) | +0.128 | **0.044** ✓ |
+
+The youngest age tertile leaks ~13 percentage points more than the
+oldest under EEGNet. Combined with the decile gap, this means EEGNet's
+privacy threat is concentrated on younger subjects with characteristic
+motor-imagery patterns, while older subjects with weaker patterns are
+both worse for the BCI task (lower task acc) AND less identifiable.
+See `figures/17_subgroup_fairness_eegnet.pdf`.
+
+## 5. Discussion
+
+The empirical picture across 5 attacks × 3 victims × 3 defense families
+× 2 datasets × demographic stratification × adaptive attackers is
+consistent: **EEG carries strong, stable, subject-specific information
+that survives task changes (A2), session changes (A3), unseen-subject
+generalization (A4), membership-inference (A5), and partially survives
+cross-dataset transfer (Section 4.2)**.
+
+The defense story is more nuanced than the milestone-time framing.
+
+- D1 ad-hoc transforms remain weak on the strongest victim (Riemann).
+- D2 DANN looks effective against generic attackers but **collapses
+  catastrophically under an adaptive attacker** who fine-tunes the
+  encoder. This is a methodologically critical observation: adversarial
+  subject-invariance training does not provide defense-aware privacy.
+- D3 DP-SGD provides formal privacy at ε=3, with most of the empirical
+  privacy benefit coming from the architectural changes Opacus requires
+  (BatchNorm → GroupNorm) rather than the noise mechanism itself.
+
+A meaningful privacy guarantee for BCI models likely requires either
+formal mechanism-level privacy (DP) — which we benchmark — or a defense
+that holds under an adaptive attacker, which DANN at our tested λ
+values does not.
+
+## 6. Limitations and next steps for the final report
+
+1. **Adaptive attackers tested only against D2.** D1 and D3 numbers are
+   upper bounds for generic attackers; defense-aware attackers might
+   reduce them further. Final-report extension: adaptive attacks on the
+   full defense matrix.
+2. **Cross-dataset cohort small.** IV-2a's 9 subjects bound the cross-
+   dataset AUC's CI; a third dataset (e.g., HighGamma or Cho-Lee) would
+   triangulate the claim further.
+3. **DP-SGD architectural confound** (~37 pp privacy from architecture,
+   ~1.6 pp from formal DP) is documented but not isolated experimentally.
+   A clean ablation (AdamW EEGNet without DP, with GroupNorm, etc.) is
+   straightforward and worth running.
+4. **The age effect on EEGNet (p=0.044)** is significant at α=0.05 but
+   should be replicated on a fresh seed before being claimed strongly.
 
 All numbers are reproducible from the canonical result JSONs under `results/`,
 the experiment scripts under `experiments/`, and the audit trail under `runs/`,
 on the same git commit (linked in each `runs/<run_id>/meta.json`).
+Acceptance criterion: `python -m tools.audit` returns 76 OK / 0 WARN / 0 FAIL.

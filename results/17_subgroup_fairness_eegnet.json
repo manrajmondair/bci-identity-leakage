@@ -1,0 +1,883 @@
+{
+  "victim": "eegnet",
+  "task_acc": 0.38782051282051283,
+  "attack_acc_mean": 0.4096153846153846,
+  "attack_acc_std": 0.23157178821403732,
+  "decile_gap": 0.7833333333333333,
+  "sex": {
+    "M": {
+      "n": 41,
+      "mean": 0.4452574525745257,
+      "ci": [
+        0.36987804878048774,
+        0.5309010840108401
+      ]
+    },
+    "F": {
+      "n": 56,
+      "mean": 0.3853174603174603,
+      "ci": [
+        0.3301537698412698,
+        0.43790178571428573
+      ]
+    },
+    "diff_M_minus_F": {
+      "point": 0.05993999225706542,
+      "ci_low": -0.036604481223383695,
+      "ci_high": 0.1561504307007356,
+      "mannwhitneyu_p": 0.2878026713089641
+    }
+  },
+  "age": {
+    "low": {
+      "n": 34,
+      "mean": 0.48398692810457516,
+      "cutoff": 32.0
+    },
+    "high": {
+      "n": 30,
+      "mean": 0.3555555555555557,
+      "cutoff": 44.00000000000001
+    },
+    "diff_low_minus_high": {
+      "point": 0.12843137254901948,
+      "ci_low": 0.012673202614379061,
+      "ci_high": 0.24667919389978216,
+      "mannwhitneyu_p": 0.04350997473952885
+    }
+  },
+  "per_subject": [
+    {
+      "subject_id": 1,
+      "attack_acc": 0.1,
+      "task_acc": 0.5222222222222223,
+      "sex": "F",
+      "age": 49,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 2,
+      "attack_acc": 0.36666666666666664,
+      "task_acc": 0.6111111111111112,
+      "sex": "F",
+      "age": 51,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 3,
+      "attack_acc": 0.24444444444444444,
+      "task_acc": 0.37777777777777777,
+      "sex": "M",
+      "age": 53,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 4,
+      "attack_acc": 0.9777777777777777,
+      "task_acc": 0.2777777777777778,
+      "sex": "M",
+      "age": 47,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 5,
+      "attack_acc": 0.7555555555555555,
+      "task_acc": 0.32222222222222224,
+      "sex": "F",
+      "age": 20,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 6,
+      "attack_acc": 0.5666666666666667,
+      "task_acc": 0.25555555555555554,
+      "sex": "M",
+      "age": 43,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 7,
+      "attack_acc": 0.28888888888888886,
+      "task_acc": 0.6222222222222222,
+      "sex": "F",
+      "age": 32,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 8,
+      "attack_acc": 0.6111111111111112,
+      "task_acc": 0.36666666666666664,
+      "sex": "M",
+      "age": 32,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 9,
+      "attack_acc": 0.45555555555555555,
+      "task_acc": 0.3,
+      "sex": "F",
+      "age": 48,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 10,
+      "attack_acc": 0.08888888888888889,
+      "task_acc": 0.5777777777777777,
+      "sex": "F",
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 11,
+      "attack_acc": 0.36666666666666664,
+      "task_acc": 0.23333333333333334,
+      "sex": "F",
+      "age": 38,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 12,
+      "attack_acc": 0.6111111111111112,
+      "task_acc": 0.4666666666666667,
+      "sex": "F",
+      "age": 32,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 13,
+      "attack_acc": 0.6666666666666666,
+      "task_acc": 0.4,
+      "sex": "F",
+      "age": 23,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 14,
+      "attack_acc": 0.2222222222222222,
+      "task_acc": 0.37777777777777777,
+      "sex": "M",
+      "age": 26,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 15,
+      "attack_acc": 0.36666666666666664,
+      "task_acc": 0.6444444444444445,
+      "sex": "F",
+      "age": 47,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 16,
+      "attack_acc": 0.7444444444444445,
+      "task_acc": 0.28888888888888886,
+      "sex": "F",
+      "age": 32,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 17,
+      "attack_acc": 0.7111111111111111,
+      "task_acc": 0.34444444444444444,
+      "sex": "F",
+      "age": 48,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 18,
+      "attack_acc": 0.5666666666666667,
+      "task_acc": 0.28888888888888886,
+      "sex": "M",
+      "age": 26,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 19,
+      "attack_acc": 0.5666666666666667,
+      "task_acc": 0.4,
+      "sex": "M",
+      "age": 34,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 20,
+      "attack_acc": 0.2222222222222222,
+      "task_acc": 0.23333333333333334,
+      "sex": "M",
+      "age": 30,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 21,
+      "attack_acc": 0.4888888888888889,
+      "task_acc": 0.4,
+      "sex": "F",
+      "age": 36,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 22,
+      "attack_acc": 0.37777777777777777,
+      "task_acc": 0.3888888888888889,
+      "sex": "M",
+      "age": 25,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 23,
+      "attack_acc": 0.16666666666666666,
+      "task_acc": 0.4,
+      "sex": "F",
+      "age": 27,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 24,
+      "attack_acc": 0.8,
+      "task_acc": 0.2777777777777778,
+      "sex": "F",
+      "age": 26,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 25,
+      "attack_acc": 0.6222222222222222,
+      "task_acc": 0.34444444444444444,
+      "sex": "F",
+      "age": 41,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 26,
+      "attack_acc": 0.12222222222222222,
+      "task_acc": 0.23333333333333334,
+      "sex": "M",
+      "age": 52,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 27,
+      "attack_acc": 0.14444444444444443,
+      "task_acc": 0.4666666666666667,
+      "sex": "M",
+      "age": 47,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 28,
+      "attack_acc": 0.24444444444444444,
+      "task_acc": 0.34444444444444444,
+      "sex": "F",
+      "age": 34,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 29,
+      "attack_acc": 0.5,
+      "task_acc": 0.6777777777777778,
+      "sex": "M",
+      "age": 30,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 30,
+      "attack_acc": 0.28888888888888886,
+      "task_acc": 0.36666666666666664,
+      "sex": "M",
+      "age": 54,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 31,
+      "attack_acc": 0.4666666666666667,
+      "task_acc": 0.34444444444444444,
+      "sex": "M",
+      "age": 31,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 32,
+      "attack_acc": 0.35555555555555557,
+      "task_acc": 0.45555555555555555,
+      "sex": "F",
+      "age": 51,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 33,
+      "attack_acc": 0.36666666666666664,
+      "task_acc": 0.5222222222222223,
+      "sex": "M",
+      "age": 67,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 34,
+      "attack_acc": 0.044444444444444446,
+      "task_acc": 0.5777777777777777,
+      "sex": "M",
+      "age": 43,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 35,
+      "attack_acc": 0.3,
+      "task_acc": 0.5888888888888889,
+      "sex": "F",
+      "age": 27,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 36,
+      "attack_acc": 0.35555555555555557,
+      "task_acc": 0.25555555555555554,
+      "sex": "M",
+      "age": 36,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 37,
+      "attack_acc": 0.9,
+      "task_acc": 0.3111111111111111,
+      "sex": "F",
+      "age": 25,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 38,
+      "attack_acc": 0.6222222222222222,
+      "task_acc": 0.2222222222222222,
+      "sex": "F",
+      "age": 50,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 39,
+      "attack_acc": 0.2777777777777778,
+      "task_acc": 0.23333333333333334,
+      "sex": "F",
+      "age": 42,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 40,
+      "attack_acc": 0.2777777777777778,
+      "task_acc": 0.32222222222222224,
+      "sex": "M",
+      "age": 36,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 41,
+      "attack_acc": 0.3888888888888889,
+      "task_acc": 0.3111111111111111,
+      "sex": "M",
+      "age": 19,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 42,
+      "attack_acc": 0.7666666666666667,
+      "task_acc": 0.6222222222222222,
+      "sex": "F",
+      "age": 45,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 43,
+      "attack_acc": 0.1111111111111111,
+      "task_acc": 0.5,
+      "sex": "F",
+      "age": 40,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 44,
+      "attack_acc": 0.17777777777777778,
+      "task_acc": 0.3888888888888889,
+      "sex": null,
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 45,
+      "attack_acc": 0.24444444444444444,
+      "task_acc": 0.4111111111111111,
+      "sex": "F",
+      "age": 33,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 46,
+      "attack_acc": 0.18888888888888888,
+      "task_acc": 0.28888888888888886,
+      "sex": "M",
+      "age": 57,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 47,
+      "attack_acc": 0.3333333333333333,
+      "task_acc": 0.23333333333333334,
+      "sex": "F",
+      "age": 55,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 48,
+      "attack_acc": 0.4111111111111111,
+      "task_acc": 0.6666666666666666,
+      "sex": null,
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 49,
+      "attack_acc": 0.07777777777777778,
+      "task_acc": 0.37777777777777777,
+      "sex": "M",
+      "age": 27,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 50,
+      "attack_acc": 0.8333333333333334,
+      "task_acc": 0.3111111111111111,
+      "sex": "M",
+      "age": 48,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 51,
+      "attack_acc": 0.9444444444444444,
+      "task_acc": 0.23333333333333334,
+      "sex": "M",
+      "age": 23,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 52,
+      "attack_acc": 0.3333333333333333,
+      "task_acc": 0.45555555555555555,
+      "sex": "M",
+      "age": 31,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 53,
+      "attack_acc": 0.2111111111111111,
+      "task_acc": 0.2777777777777778,
+      "sex": "F",
+      "age": 37,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 54,
+      "attack_acc": 0.35555555555555557,
+      "task_acc": 0.5111111111111111,
+      "sex": "F",
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 55,
+      "attack_acc": 0.5555555555555556,
+      "task_acc": 0.3111111111111111,
+      "sex": "F",
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 56,
+      "attack_acc": 0.45555555555555555,
+      "task_acc": 0.26666666666666666,
+      "sex": "M",
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 57,
+      "attack_acc": 0.18888888888888888,
+      "task_acc": 0.5,
+      "sex": "F",
+      "age": 36,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 58,
+      "attack_acc": 0.7555555555555555,
+      "task_acc": 0.4888888888888889,
+      "sex": "M",
+      "age": 44,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 59,
+      "attack_acc": 0.2111111111111111,
+      "task_acc": 0.3333333333333333,
+      "sex": "F",
+      "age": 51,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 60,
+      "attack_acc": 0.17777777777777778,
+      "task_acc": 0.6111111111111112,
+      "sex": "F",
+      "age": 27,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 61,
+      "attack_acc": 0.5888888888888889,
+      "task_acc": 0.5,
+      "sex": "F",
+      "age": 23,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 62,
+      "attack_acc": 0.36666666666666664,
+      "task_acc": 0.5444444444444444,
+      "sex": "F",
+      "age": 31,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 63,
+      "attack_acc": 0.4111111111111111,
+      "task_acc": 0.35555555555555557,
+      "sex": "F",
+      "age": 44,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 64,
+      "attack_acc": 0.37777777777777777,
+      "task_acc": 0.3111111111111111,
+      "sex": "F",
+      "age": 34,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 65,
+      "attack_acc": 0.26666666666666666,
+      "task_acc": 0.43333333333333335,
+      "sex": "F",
+      "age": 22,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 66,
+      "attack_acc": 0.17777777777777778,
+      "task_acc": 0.23333333333333334,
+      "sex": "F",
+      "age": 44,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 67,
+      "attack_acc": 0.8555555555555555,
+      "task_acc": 0.2222222222222222,
+      "sex": "M",
+      "age": 30,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 68,
+      "attack_acc": 0.2111111111111111,
+      "task_acc": 0.36666666666666664,
+      "sex": "F",
+      "age": 31,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 69,
+      "attack_acc": 0.5,
+      "task_acc": 0.34444444444444444,
+      "sex": "F",
+      "age": 39,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 70,
+      "attack_acc": 0.25555555555555554,
+      "task_acc": 0.4666666666666667,
+      "sex": "F",
+      "age": 34,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 71,
+      "attack_acc": 0.2777777777777778,
+      "task_acc": 0.5777777777777777,
+      "sex": "M",
+      "age": 27,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 72,
+      "attack_acc": 0.34444444444444444,
+      "task_acc": 0.5111111111111111,
+      "sex": "F",
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 73,
+      "attack_acc": 0.37777777777777777,
+      "task_acc": 0.25555555555555554,
+      "sex": "M",
+      "age": 44,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 74,
+      "attack_acc": 0.45555555555555555,
+      "task_acc": 0.2,
+      "sex": "F",
+      "age": 43,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 75,
+      "attack_acc": 0.5777777777777777,
+      "task_acc": 0.4444444444444444,
+      "sex": "F",
+      "age": 28,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 76,
+      "attack_acc": 0.4222222222222222,
+      "task_acc": 0.23333333333333334,
+      "sex": "M",
+      "age": 33,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 77,
+      "attack_acc": 0.1,
+      "task_acc": 0.34444444444444444,
+      "sex": "M",
+      "age": 57,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 78,
+      "attack_acc": 0.4222222222222222,
+      "task_acc": 0.32222222222222224,
+      "sex": "M",
+      "age": 50,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 79,
+      "attack_acc": 0.35555555555555557,
+      "task_acc": 0.3333333333333333,
+      "sex": "F",
+      "age": 58,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 80,
+      "attack_acc": 0.5111111111111111,
+      "task_acc": 0.4222222222222222,
+      "sex": "M",
+      "age": 28,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 81,
+      "attack_acc": 0.7777777777777778,
+      "task_acc": 0.4,
+      "sex": "M",
+      "age": 19,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 82,
+      "attack_acc": 0.35555555555555557,
+      "task_acc": 0.37777777777777777,
+      "sex": "F",
+      "age": 54,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 83,
+      "attack_acc": 0.5666666666666667,
+      "task_acc": 0.37777777777777777,
+      "sex": "M",
+      "age": 59,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 84,
+      "attack_acc": 0.25555555555555554,
+      "task_acc": 0.23333333333333334,
+      "sex": "F",
+      "age": 56,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 85,
+      "attack_acc": 0.7777777777777778,
+      "task_acc": 0.6777777777777778,
+      "sex": "M",
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 86,
+      "attack_acc": 0.16666666666666666,
+      "task_acc": 0.6,
+      "sex": "F",
+      "age": 50,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 87,
+      "attack_acc": 0.17777777777777778,
+      "task_acc": 0.32222222222222224,
+      "sex": "M",
+      "age": 39,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 90,
+      "attack_acc": 0.24444444444444444,
+      "task_acc": 0.4222222222222222,
+      "sex": "M",
+      "age": 20,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 91,
+      "attack_acc": 0.3333333333333333,
+      "task_acc": 0.3888888888888889,
+      "sex": "F",
+      "age": 55,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 93,
+      "attack_acc": 0.044444444444444446,
+      "task_acc": 0.5111111111111111,
+      "sex": "F",
+      "age": 49,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 94,
+      "attack_acc": 0.7777777777777778,
+      "task_acc": 0.45555555555555555,
+      "sex": "M",
+      "age": 30,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 95,
+      "attack_acc": 0.011111111111111112,
+      "task_acc": 0.3,
+      "sex": "F",
+      "age": 47,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 96,
+      "attack_acc": 0.43333333333333335,
+      "task_acc": 0.4,
+      "sex": "F",
+      "age": 39,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 97,
+      "attack_acc": 0.8444444444444444,
+      "task_acc": 0.3,
+      "sex": "M",
+      "age": 44,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 98,
+      "attack_acc": 0.37777777777777777,
+      "task_acc": 0.24444444444444444,
+      "sex": "F",
+      "age": 42,
+      "age_bucket": "mid"
+    },
+    {
+      "subject_id": 99,
+      "attack_acc": 0.6555555555555556,
+      "task_acc": 0.32222222222222224,
+      "sex": "F",
+      "age": 26,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 101,
+      "attack_acc": 0.28888888888888886,
+      "task_acc": 0.4222222222222222,
+      "sex": "F",
+      "age": 56,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 102,
+      "attack_acc": 0.2222222222222222,
+      "task_acc": 0.28888888888888886,
+      "sex": "M",
+      "age": 24,
+      "age_bucket": "low"
+    },
+    {
+      "subject_id": 103,
+      "attack_acc": 0.3111111111111111,
+      "task_acc": 0.4111111111111111,
+      "sex": "F",
+      "age": 48,
+      "age_bucket": "high"
+    },
+    {
+      "subject_id": 105,
+      "attack_acc": 0.5,
+      "task_acc": 0.35555555555555557,
+      "sex": null,
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 106,
+      "attack_acc": 0.37777777777777777,
+      "task_acc": 0.35555555555555557,
+      "sex": null,
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 107,
+      "attack_acc": 0.18888888888888888,
+      "task_acc": 0.3111111111111111,
+      "sex": null,
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 108,
+      "attack_acc": 0.14444444444444443,
+      "task_acc": 0.4111111111111111,
+      "sex": null,
+      "age": null,
+      "age_bucket": "unknown"
+    },
+    {
+      "subject_id": 109,
+      "attack_acc": 0.9666666666666667,
+      "task_acc": 0.2777777777777778,
+      "sex": null,
+      "age": null,
+      "age_bucket": "unknown"
+    }
+  ]
+}

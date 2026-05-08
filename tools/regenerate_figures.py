@@ -288,6 +288,248 @@ def render_pareto():
     importlib.import_module("tools.pareto_plot").main()
 
 
+# ---------------------------------------------------------------------------
+# Extension figures (cross-dataset A4, multi-seed A4, adaptive attacker, MI
+# on classical, EEGNet subgroup fairness)
+# ---------------------------------------------------------------------------
+def render_a4_cross_dataset():
+    p_self = RESULTS_DIR / "06_a4_open_set.json"
+    p_cross = RESULTS_DIR / "13_a4_cross_dataset.json"
+    p_ms = RESULTS_DIR / "14_a4_multi_seed.json"
+    if not (p_self.exists() and p_cross.exists()):
+        return
+    self_ = json.loads(p_self.read_text())
+    cross = json.loads(p_cross.read_text())
+    ms = json.loads(p_ms.read_text()) if p_ms.exists() else None
+
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(7.5, 3.6))
+    labels = ["A4 within-dataset\n(PhysioNet, 24 unseen subj)"]
+    aucs = [self_["auc"]]
+    yerr_lo = [self_["auc"] - self_["auc_ci_low"]]
+    yerr_hi = [self_["auc_ci_high"] - self_["auc"]]
+    colors = ["#2c3e50"]
+    if ms is not None:
+        labels.append("A4 multi-seed mean\n(PhysioNet, 5 splits × 24 unseen)")
+        aucs.append(ms["aggregate"]["auc_mean"])
+        yerr_lo.append(ms["aggregate"]["auc_std"])
+        yerr_hi.append(ms["aggregate"]["auc_std"])
+        colors.append("#3498db")
+    labels += ["A4 cross-dataset\n(PhysioNet → IV-2a, 9 unseen)",
+               "Random\n(theoretical)"]
+    aucs += [cross["auc"], 0.5]
+    yerr_lo += [cross["auc"] - cross["auc_ci_low"], 0.0]
+    yerr_hi += [cross["auc_ci_high"] - cross["auc"], 0.0]
+    colors += ["#e67e22", "#7f8c8d"]
+    bars = ax.bar(labels, aucs, yerr=[yerr_lo, yerr_hi], color=colors,
+                  edgecolor="white", linewidth=0.8,
+                  error_kw=dict(elinewidth=0.6, capsize=2, capthick=0.6))
+    for b, v in zip(bars, aucs):
+        ax.text(b.get_x() + b.get_width()/2, v + 0.02, f"{v:.3f}",
+                ha="center", fontsize=9)
+    ax.axhline(0.5, color="#c0392b", linewidth=0.6, linestyle="--",
+               label="random = 0.5")
+    ax.set_ylabel("Verification ROC-AUC")
+    ax.set_ylim(0.45, 1.05)
+    ax.set_title("A4 verification AUC: within-dataset vs across-splits vs across-datasets")
+    ax.legend(frameon=False, fontsize=8, loc="lower left")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "13_a4_cross_dataset.pdf", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/13_a4_cross_dataset.pdf")
+
+
+def render_a4_multi_seed():
+    path = RESULTS_DIR / "14_a4_multi_seed.json"
+    if not path.exists():
+        return
+    ms = json.loads(path.read_text())
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(6.0, 3.4))
+    seeds = [r["seed"] for r in ms["per_seed"]]
+    aucs = [r["auc"] for r in ms["per_seed"]]
+    lo = [r["auc"] - r["auc_ci_low"] for r in ms["per_seed"]]
+    hi = [r["auc_ci_high"] - r["auc"] for r in ms["per_seed"]]
+    ax.errorbar(seeds, aucs, yerr=[lo, hi], fmt="o", color="#2c3e50",
+                capsize=3, linewidth=1.0, markersize=6,
+                label="per-seed AUC ± bootstrap CI")
+    ax.axhline(ms["aggregate"]["auc_mean"], color="#e67e22", linewidth=1.2,
+               label=f"5-seed mean = {ms['aggregate']['auc_mean']:.3f}")
+    ax.fill_between([min(seeds) - 0.5, max(seeds) + 0.5],
+                    ms["aggregate"]["auc_mean"] - ms["aggregate"]["auc_std"],
+                    ms["aggregate"]["auc_mean"] + ms["aggregate"]["auc_std"],
+                    alpha=0.15, color="#e67e22",
+                    label=f"±1 std = {ms['aggregate']['auc_std']:.3f}")
+    ax.set_xticks(seeds)
+    ax.set_xlabel("Random seed (subject-split index)")
+    ax.set_ylabel("Verification ROC-AUC")
+    ax.set_ylim(0.85, 0.97)
+    ax.set_title("A4 robustness: AUC across 5 random subject splits")
+    ax.legend(frameon=False, fontsize=8, loc="lower right")
+    ax.grid(linestyle=":", linewidth=0.4, alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "14_a4_multi_seed.pdf", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/14_a4_multi_seed.pdf")
+
+
+def render_adaptive_attacker():
+    path = RESULTS_DIR / "15_d2_adaptive_attacker.json"
+    if not path.exists():
+        return
+    adv = json.loads(path.read_text())
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(7.0, 3.6))
+    labels = ["A1 baseline\n(no defense)\n0.411",
+              "DANN λ=0.2\nlogreg probe\n(generic)",
+              "DANN λ=0.2\ndeep MLP probe\n(stronger generic)",
+              "DANN λ=0.2\nencoder fine-tune\n(adaptive)"]
+    top1s = [0.411, adv["attacks"][0]["top1"],
+             adv["attacks"][1]["top1"], adv["attacks"][2]["top1"]]
+    lo = [0.0,
+          adv["attacks"][0]["top1"] - adv["attacks"][0]["top1_ci_low"],
+          adv["attacks"][1]["top1"] - adv["attacks"][1]["top1_ci_low"],
+          adv["attacks"][2]["top1"] - adv["attacks"][2]["top1_ci_low"]]
+    hi = [0.0,
+          adv["attacks"][0]["top1_ci_high"] - adv["attacks"][0]["top1"],
+          adv["attacks"][1]["top1_ci_high"] - adv["attacks"][1]["top1"],
+          adv["attacks"][2]["top1_ci_high"] - adv["attacks"][2]["top1"]]
+    colors = ["#7f8c8d", "#e31a1c", "#fb6a4a", "#67000d"]
+    bars = ax.bar(labels, top1s, yerr=[lo, hi], color=colors,
+                  edgecolor="white", linewidth=0.8,
+                  error_kw=dict(elinewidth=0.6, capsize=2, capthick=0.6))
+    for b, v in zip(bars, top1s):
+        ax.text(b.get_x() + b.get_width()/2, v + 0.02, f"{v:.3f}",
+                ha="center", fontsize=9, fontweight="bold")
+    ax.axhline(0.0096, color="#c0392b", linewidth=0.6, linestyle="--",
+               label="chance = 0.0096")
+    ax.set_ylabel("Re-ID top-1 (104 PhysioNet subjects)")
+    ax.set_ylim(0, 1.0)
+    ax.set_title("DANN λ=0.2 collapses under an adaptive attacker who fine-tunes the encoder")
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "15_d2_adaptive_attacker.pdf", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/15_d2_adaptive_attacker.pdf")
+
+
+def render_a5_classical():
+    p_eegnet = RESULTS_DIR / "08_a5_membership_inference.json"
+    p_riemann = RESULTS_DIR / "16_a5_riemann_mi.json"
+    p_fbcsp = RESULTS_DIR / "16_a5_fbcsp_mi.json"
+    if not (p_eegnet.exists() and p_riemann.exists() and p_fbcsp.exists()):
+        return
+    eegnet = json.loads(p_eegnet.read_text())
+    riemann = json.loads(p_riemann.read_text())
+    fbcsp = json.loads(p_fbcsp.read_text())
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(6.4, 3.6))
+    victims = ["EEGNet\n(20 shadows)",
+               "FBCSP+LDA\n(12 shadows)",
+               "Riemann\ntangent-space\n(20 shadows)"]
+    aucs = [eegnet["auc"], fbcsp["auc"], riemann["auc"]]
+    lo = [eegnet["auc"] - eegnet["auc_ci_low"],
+          fbcsp["auc"] - fbcsp["auc_ci_low"],
+          riemann["auc"] - riemann["auc_ci_low"]]
+    hi = [eegnet["auc_ci_high"] - eegnet["auc"],
+          fbcsp["auc_ci_high"] - fbcsp["auc"],
+          riemann["auc_ci_high"] - riemann["auc"]]
+    bars = ax.bar(victims, aucs, yerr=[lo, hi],
+                  color=["#2c3e50", "#7f8c8d", "#34495e"],
+                  edgecolor="white", linewidth=0.8,
+                  error_kw=dict(elinewidth=0.6, capsize=2, capthick=0.6))
+    for b, v in zip(bars, aucs):
+        ax.text(b.get_x() + b.get_width()/2, min(v + 0.02, 0.97),
+                f"{v:.3f}", ha="center", fontsize=10, fontweight="bold")
+    ax.axhline(0.5, color="#c0392b", linewidth=0.6, linestyle="--",
+               label="random = 0.5")
+    ax.set_ylabel("Membership-inference AUC")
+    ax.set_ylim(0.4, 1.05)
+    ax.set_title("A5 membership inference across victim families")
+    ax.legend(frameon=False, fontsize=8, loc="lower left")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "16_a5_classical.pdf", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/16_a5_classical.pdf")
+
+
+def render_subgroup_fairness_eegnet():
+    path = RESULTS_DIR / "17_subgroup_fairness_eegnet.json"
+    if not path.exists():
+        return
+    sf = json.loads(path.read_text())
+    plt.rcParams.update(_setup_axes())
+    fig, axes = plt.subplots(2, 2, figsize=(8.2, 6.6))
+    rows = sf["per_subject"]
+    attack = np.array([r["attack_acc"] for r in rows])
+    task = np.array([r["task_acc"] for r in rows])
+
+    ax = axes[0, 0]
+    ax.hist(attack, bins=20, color="#2c3e50", alpha=0.7,
+            edgecolor="white", linewidth=0.5)
+    ax.set_xlabel("Per-subject A1 attack accuracy")
+    ax.set_ylabel("# subjects")
+    ax.set_title(f"Per-subject heterogeneity "
+                 f"(mean {attack.mean():.3f}, std {attack.std():.3f})")
+    ax.grid(linestyle=":", linewidth=0.4, alpha=0.5)
+
+    ax = axes[0, 1]
+    ax.scatter(task, attack, s=20, color="#2c3e50", alpha=0.6,
+               edgecolor="white", linewidth=0.4)
+    ax.set_xlabel("Per-subject task accuracy")
+    ax.set_ylabel("Per-subject A1 attack accuracy")
+    ax.set_xlim(0, 0.85); ax.set_ylim(0, 1.05)
+    pearson = float(np.corrcoef(task, attack)[0, 1])
+    ax.set_title(f"Task vs attack (Pearson r = {pearson:+.3f})")
+    ax.grid(linestyle=":", linewidth=0.4, alpha=0.5)
+
+    ax = axes[1, 0]
+    m_acc = [r["attack_acc"] for r in rows if r["sex"] == "M"]
+    f_acc = [r["attack_acc"] for r in rows if r["sex"] == "F"]
+    bp = ax.boxplot([m_acc, f_acc],
+                     tick_labels=[f"M (n={len(m_acc)})", f"F (n={len(f_acc)})"],
+                     patch_artist=True, showfliers=True,
+                     flierprops={"marker": ".", "markersize": 3, "alpha": 0.5})
+    for patch, c in zip(bp["boxes"], ["#2c3e50", "#7f8c8d"]):
+        patch.set_facecolor(c); patch.set_alpha(0.6)
+    ax.set_ylabel("A1 attack accuracy")
+    p_sex = sf["sex"]["diff_M_minus_F"]["mannwhitneyu_p"]
+    ax.set_title(f"By sex (Δ = +{sf['sex']['diff_M_minus_F']['point']:.3f}, "
+                 f"p={p_sex:.3f})")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+
+    ax = axes[1, 1]
+    low_acc = [r["attack_acc"] for r in rows if r["age_bucket"] == "low"]
+    mid_acc = [r["attack_acc"] for r in rows if r["age_bucket"] == "mid"]
+    high_acc = [r["attack_acc"] for r in rows if r["age_bucket"] == "high"]
+    bp = ax.boxplot([low_acc, mid_acc, high_acc],
+                     tick_labels=[f"Low\n(n={len(low_acc)})",
+                                  f"Mid\n(n={len(mid_acc)})",
+                                  f"High\n(n={len(high_acc)})"],
+                     patch_artist=True, showfliers=True,
+                     flierprops={"marker": ".", "markersize": 3, "alpha": 0.5})
+    for patch, c in zip(bp["boxes"], ["#3498db", "#7f8c8d", "#e67e22"]):
+        patch.set_facecolor(c); patch.set_alpha(0.6)
+    ax.set_ylabel("A1 attack accuracy"); ax.set_xlabel("Age tertile")
+    p_age = sf["age"]["diff_low_minus_high"]["mannwhitneyu_p"]
+    ax.set_title(f"By age tertile (Δ low−high = "
+                 f"+{sf['age']['diff_low_minus_high']['point']:.3f}, "
+                 f"p={p_age:.3f})")
+    ax.grid(axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
+
+    fig.suptitle(f"EEGNet subgroup fairness — A1 attack accuracy across 104 "
+                 f"subjects (decile gap {sf['decile_gap']:.3f})",
+                 y=1.005, fontsize=10)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "17_subgroup_fairness_eegnet.pdf",
+                dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/17_subgroup_fairness_eegnet.pdf")
+
+
 def main() -> None:
     print("Regenerating all figures from result JSONs ...\n")
     for fn in (
@@ -297,6 +539,14 @@ def main() -> None:
         lambda: render_d1_other("channel_drop"),
         render_d2_dann, render_d3,
         render_subgroup_fairness,
+        # Extension batch (cross-dataset, multi-seed, adaptive, classical MI,
+        # EEGNet fairness)
+        render_a4_cross_dataset,
+        render_a4_multi_seed,
+        render_adaptive_attacker,
+        render_a5_classical,
+        render_subgroup_fairness_eegnet,
+        # Pareto last so it sees every defense JSON if newly added
         render_pareto,
     ):
         try:
