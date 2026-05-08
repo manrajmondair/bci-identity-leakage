@@ -27,22 +27,81 @@ identity leakage with **zero** task-accuracy loss.
 
 ---
 
-## 1. Motivation
+## 1. Motivation and threat model
 
-Motor-imagery BCIs collect EEG to classify intended actions (e.g., imagined
-left/right hand). The same EEG features used to decode actions may carry stable,
-subject-specific patterns — making the "task data" function as a biometric.
-This raises ethical questions for BCI users, patients using assistive
-neurotechnology, and researchers releasing public datasets: removing names from
-EEG recordings is not the same as making the recordings non-identifying.
+### 1.1 The deployment scenario
 
-We investigate this empirically. Concretely: (RQ1) does the embedding produced
-by a task-trained BCI decoder enable subject re-identification? (RQ2) does that
-identity signal persist across cognitive tasks and across recording sessions?
-(RQ3) does it generalize to subjects the model never trained on? (RQ4) can an
-attacker tell from black-box access alone whether a subject was in the training
-cohort? (RQ5) which defense families effectively trade identity leakage for
-task accuracy?
+A consumer-neurotechnology vendor trains a motor-imagery BCI decoder on a
+research cohort (e.g., the 104 PhysioNet subjects we use), then ships
+either (a) the trained model weights to end-user devices for on-device
+inference, or (b) a hosted API that takes EEG windows and returns motor-
+imagery class predictions. Either is the standard BCI deployment pattern:
+braindecode-style EEGNet weights are < 100 KB and trivially shippable;
+several commercial BCI APIs already expose the inference path without
+any privacy guarantee about the training cohort or the inference inputs.
+
+Three concrete attackers we treat as realistic:
+
+- **Embedding-grabbing third party.** Has black-box / grey-box access to
+  the trained victim — either the weights are in the firmware they
+  reverse-engineered, or they pay for the API and feed EEG through it.
+  Wants to attribute a *new* EEG window to one of the cohort the model
+  was trained on. (Maps to A1, A2, A3.)
+- **Linker.** Has two EEG datasets from the same individual collected
+  on different days, recording protocols, or services. Wants to test
+  whether they came from the same person — a literal biometric-linkage
+  attack against pseudonymized neural data. (Maps to A4 verification on
+  unseen subjects: the model has seen *neither* recording.)
+- **Membership-inference adversary.** Has black-box access to the
+  trained victim and a dataset of subjects, some of whom may or may not
+  have been in the training cohort. Wants to know who was in. This
+  matters because membership in a clinical-research cohort is itself
+  sensitive (the cohort might be patients diagnosed with a specific
+  neurological condition). (Maps to A5.)
+
+### 1.2 Why this matters for an Ethics-of-AI submission
+
+EEG falls under GDPR Article 9 only if it functions as biometric data —
+"personal data resulting from specific technical processing relating to
+the physical, physiological or behavioural characteristics of a natural
+person, which allow or confirm the unique identification of that
+natural person." The empirical question that determines whether the
+Article applies is the open-set verification question we test in A4:
+*does an EEG embedding actually allow unique identification of natural
+persons it has never been trained on?* If the answer is yes, current
+"de-identified" public EEG releases — including PhysioNet — are
+biometric data under the regulation, and current consent forms,
+retention policies, and re-distribution practices are insufficient.
+
+The same question is the load-bearing one for the emerging neurorights
+frameworks (Chile's neurorights amendment, Colorado SB 25-238, the
+proposed EU AI Act passages on neural data). Each frames the policy
+question as "does this category of brain data identify the person it
+was recorded from"; a published, calibrated empirical answer is what
+those frameworks need.
+
+### 1.3 What we set out to measure
+
+Five attacks against three victim families, two datasets, three
+defense families, demographic stratification, and adaptive attackers:
+
+- (RQ1) does a task-trained BCI decoder enable closed-set subject
+  re-identification on its training cohort?
+- (RQ2) does that identity signal persist across cognitive tasks
+  (motor-execution → motor-imagery; resting-state → motor-imagery) and
+  across recording sessions on different days?
+- (RQ3) does it generalize to subjects the model never trained on?
+- (RQ4) can a black-box attacker tell whether a subject was in the
+  training cohort?
+- (RQ5) which defense families effectively trade identity leakage for
+  task accuracy, and *do they hold under attackers who know the
+  defense exists*?
+
+The last clause of RQ5 is the methodological commitment that makes
+this report honest: any empirical privacy claim is conditioned on the
+attacker's access pattern, and a defense that works against generic
+attackers but collapses under adaptive ones (Section 4.3) provides no
+deployable privacy.
 
 ## 2. Threat models, datasets, methods
 
