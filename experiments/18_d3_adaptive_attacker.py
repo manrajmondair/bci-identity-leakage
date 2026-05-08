@@ -102,11 +102,67 @@ def _deep_mlp_predict_with_proba(model, Z_test, sid_to_idx, *, device, n_classes
 # ---------------------------------------------------------------------------
 # Attack 3: encoder fine-tune on the DP-trained backbone
 # ---------------------------------------------------------------------------
-def _unwrap_dp_module(model: nn.Module) -> nn.Module:
-    """Opacus wraps the trained module in GradSampleModule. Unwrap it for
-    fine-tuning so we don't carry the per-sample-grad bookkeeping."""
-    inner = getattr(model, "_module", None)
-    return inner if inner is not None else model
+def _strip_opacus_hooks(module: nn.Module) -> None:
+    """Recursively clear all forward / backward hooks on a module tree.
+
+    Opacus's `GradSampleModule` registers per-sample-gradient hooks on the
+    inner module. When we deepcopy that inner module to fine-tune from its
+    weights, the hooks come along — and they reference per-parameter
+    state (`_forward_counter`) that exists only on the GradSampleModule-
+    wrapped parameters. Any forward pass through the copy then crashes
+    with `'Parameter' object has no attribute '_forward_counter'`.
+
+    We never need those hooks during the adaptive attack — we want a
+    clean autograd graph for end-to-end backprop on subject-id labels.
+    Strip them before training.
+    """
+    for m in module.modules():
+        m._forward_hooks.clear()
+        m._backward_hooks.clear()
+        if hasattr(m, "_forward_pre_hooks"):
+            m._forward_pre_hooks.clear()
+        if hasattr(m, "_full_backward_hooks"):
+            m._full_backward_hooks.clear()
+        if hasattr(m, "_full_backward_pre_hooks"):
+            m._full_backward_pre_hooks.clear()
+
+
+def _clean_groupnorm_eegnet_from_victim(victim: DPSGDVictim) -> nn.Module:
+    """Rebuild a fresh GroupNorm-EEGNet (architecture-equivalent to the
+    one DP-SGD trained) and load the trained weights into it.
+
+    This sidesteps Opacus's hook-bookkeeping entirely: we don't deepcopy
+    the wrapped module, we construct a clean one and copy weights. Fixes
+    the `_forward_counter` AttributeError under torch 2.10 + opacus.
+    """
+    # _build() returns a fresh GroupNorm-EEGNet (after parametrize-strip
+    # and ModuleValidator.fix), already on victim.device.
+    fresh = victim._build()
+    # Trained model_'s state dict — GradSampleModule wrapping prefixes
+    # everything with `_module.`; strip it.
+    sd = victim.model_.state_dict()
+    cleaned: dict[str, torch.Tensor] = {}
+    for k, v in sd.items():
+        if k.startswith("_module."):
+            cleaned[k[len("_module."):]] = v
+        else:
+            cleaned[k] = v
+    # Drop Opacus's `_loss_reduction` / similar non-parameter entries
+    # by loading non-strict.
+    missing, unexpected = fresh.load_state_dict(cleaned, strict=False)
+    if missing:
+        print(f"  [fine-tune-init] missing keys (not present in DP weights): "
+              f"{missing[:3]}{'...' if len(missing) > 3 else ''}", flush=True)
+    if unexpected:
+        # Filter out Opacus bookkeeping that we expect to be unexpected.
+        relevant = [k for k in unexpected if not k.startswith(("_loss",))]
+        if relevant:
+            print(f"  [fine-tune-init] unexpected keys (Opacus extras, harmless): "
+                  f"{relevant[:3]}{'...' if len(relevant) > 3 else ''}", flush=True)
+    # Belt-and-braces: clear any hooks that snuck through (none expected
+    # since fresh was just built, but cheap insurance).
+    _strip_opacus_hooks(fresh)
+    return fresh
 
 
 class _FineTunedDPReID(nn.Module):
@@ -130,15 +186,13 @@ class _FineTunedDPReID(nn.Module):
                 break
         if head_attr is None:
             raise RuntimeError("Cannot locate classifier head on DP-EEGNet")
-        # Deep-copy the source module so we don't trash the victim's weights
-        self.backbone = copy.deepcopy(source_module)
-        # Determine head input dim by replacing it with Identity and
-        # passing a probe through. Use a dummy forward in eval mode so
-        # GroupNorm doesn't barf on batch=1.
-        old_head = getattr(self.backbone, head_attr)
-        # Probe input shape from the source module's first conv layer
-        # (we don't have direct access here, so set lazily on first forward)
+        # source_module is a *clean* rebuild (not a deepcopy of the
+        # GradSampleModule's inner) so we can use it directly.
+        self.backbone = source_module
         setattr(self.backbone, head_attr, nn.Identity())
+        # Belt-and-braces clear in case any caller passes a raw inner
+        # module by accident.
+        _strip_opacus_hooks(self.backbone)
         self._head_attr = head_attr
         self._n_subjects = n_subjects
         self.head: nn.Module | None = None  # built lazily on first forward
@@ -164,7 +218,9 @@ def _fine_tune_dp_encoder(victim: DPSGDVictim, X_train, y_train,
     y_idx = np.array([sid_to_idx[int(s)] for s in y_train], dtype=np.int64)
     n_classes = len(sid_to_idx)
 
-    src = _unwrap_dp_module(victim.model_)
+    # Clean rebuild + state-dict load. Avoids Opacus hook contamination
+    # that breaks deepcopy on torch 2.10+.
+    src = _clean_groupnorm_eegnet_from_victim(victim)
     model = _FineTunedDPReID(src, n_classes, input_scale=victim.input_scale).to(device)
     # Warm up the lazy head with one dummy forward so the optimizer sees
     # all parameters from epoch 0.
