@@ -26,8 +26,8 @@ BCI Competition IV-2a's 9-subject two-session corpus, we benchmark five
 attack protocols (closed-set re-identification A1; cross-task re-identification
 A2; cross-session re-identification A3; open-set verification on subjects
 held out from the embedding's training set A4; black-box membership inference
-A5) against three classes of victim model (FBCSP+LDA; Riemannian tangent-space
-+ logistic regression; EEGNet). We then re-run the attack suite against each
+A5) against three classes of victim model (FBCSP+LDA; Riemannian tangent-space 
+and logistic regression; EEGNet). We then re-run the attack suite against each
 of three defense families (D1 ad-hoc input transforms; D2 DANN adversarial
 subject-invariant training; D3 DP-SGD with formal (ε, δ) guarantees) and a
 matched encoder-fine-tune adaptive attacker.
