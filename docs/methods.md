@@ -105,15 +105,58 @@ Train contrastive EEGNet on PhysioNet's 22-channel subset matching IV-2a (resamp
 
 5 random train/test subject splits (80/24). Robustness CI on the AUC across splits.
 
-### Adaptive attacker against DANN
+### Adaptive attackers (defender-aware re-identification)
 
-Three increasingly powerful attackers against the DANN λ=0.2 encoder:
+Three attacker tiers run against each defended victim:
 
-1. Standard logreg probe (= A1 baseline)
-2. Deep MLP probe (3 hidden layers, BN + ReLU + dropout) on the **frozen** encoder
-3. End-to-end **encoder fine-tune** for re-ID — encoder initialized from the DANN weights, retrained for subject classification
+1. **Standard logreg probe** (= A1 baseline) — generic linear probe on
+   the frozen encoder's penultimate features.
+2. **Deep MLP probe** (3 hidden layers, BatchNorm + ReLU + dropout) on
+   the **frozen** encoder — higher-capacity generic attacker.
+3. **End-to-end encoder fine-tune** — encoder initialized from the
+   defended victim's weights, retrained end-to-end with a fresh re-ID
+   head on subject-id labels (15 epochs, AdamW lr=5e-4, batch 64).
+   The realistic worst-case: white-box access + adaptive optimization.
 
-The fine-tune is the realistic worst-case: the attacker has white-box access and can adapt.
+Run against three defense families:
+
+- `experiments/15_d2_adaptive_attacker.py` — DANN λ=0.2.
+- `experiments/18_d3_adaptive_attacker.py` — DP-SGD ε=3.
+- `experiments/23_d1_adaptive_attacker.py` — D1 PCA k=8, noise σ=1.0,
+  channel-drop k=8.
+
+Empirical finding: only formal differential privacy (D3) holds under
+fine-tune; DANN and every D1 point collapse *above* the no-defense
+A1 baseline. See report §4.3, §4.6, §4.10.
+
+### DP-SGD architecture ablation (experiment 19)
+
+Disentangles D3's empirical privacy into (a) the BatchNorm → GroupNorm
+architectural change Opacus's `ModuleValidator.fix` performs and (b) the
+formal noise mechanism. Trains a fresh GroupNorm-EEGNet with the same
+SGD optimizer DP-SGD uses, but `target_epsilon=None` (no per-sample
+gradient clipping, no Gaussian noise). A1 closed-set re-ID is then run
+against this configuration's embeddings. The privacy attributable to
+architecture is `(AdamW+BN top-1) − (SGD+GN top-1)`; the privacy
+attributable to formal DP is `(SGD+GN top-1) − (SGD+GN+DP top-1)`.
+
+### Resting-state cross-task A2 (experiment 21)
+
+Stronger version of A2's task-orthogonality test. The probe is trained
+on PhysioNet's resting-state runs (R01 eyes-open, R02 eyes-closed),
+which have no shared task structure with motor imagery, and tested on
+the same imagery test runs (12, 14) used by A1. Sliding 2 s windows
+with 1 s stride applied directly to the continuous baseline EEG (no
+event-locked epoching, since baseline runs have no T1/T2 annotations).
+
+### Multi-seed EEGNet fairness (experiment 22)
+
+Re-runs the cross-subject EEGNet → per-subject A1 attack-acc →
+demographic stratification pipeline across 5 random training seeds.
+Reports per-seed Mann-Whitney p-values, mean ± std effect sizes,
+and **Fisher's combined p** across seeds (the appropriate aggregate
+test for combining independent p-values). Distinguishes "real but
+underpowered per seed" from "robust at the aggregate level".
 
 ---
 

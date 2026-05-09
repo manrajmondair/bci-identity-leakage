@@ -34,7 +34,7 @@ from data.channel_subset import (
     subset_channels,
 )
 from data.physionet_loader import valid_subjects as physionet_subjects
-from preprocess.windows import WindowedDataset, windowed_subjects
+from preprocess.windows import windowed_subjects
 
 
 def main() -> None:

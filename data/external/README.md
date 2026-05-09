@@ -37,3 +37,21 @@ curl -s https://s3.amazonaws.com/openneuro.org/ds004362/participants.tsv \
 The committed file is small (~3 KB, 110 lines) so it's tracked in git rather than refetched on each clone — that way the analysis pipeline doesn't depend on OpenNeuro's S3 endpoint being reachable.
 
 **License.** OpenNeuro data is released under [CC0](https://creativecommons.org/publicdomain/zero/1.0/), so reproduction here is unrestricted.
+
+## `physionet_duration_fingerprint.json`
+
+**Purpose.** Per-subject per-run recording-duration vector for the 104
+subjects in the analysis cohort, across all 14 PhysioNet runs. Used to
+empirically check the OpenNeuro `sub-XXX` ↔ PhysioNet `S{XXX}`
+indexing mapping when anyone downloads the OpenNeuro BIDS conversion.
+Produced once locally; documented in [`MAPPING_VERIFICATION.md`](MAPPING_VERIFICATION.md).
+
+## `MAPPING_VERIFICATION.md`
+
+Documents the verification protocol and limits for the OpenNeuro →
+PhysioNet indexing assumption. PhysioNet EDF headers anonymize
+subject metadata so a strict per-subject empirical verification is
+not possible from the local cache alone; the document describes the
+duration-fingerprint check (point-wise verifiable for 7 of 104
+subjects, cluster-membership verifiable for the rest) and the
+structural argument that supports the assumed mapping.

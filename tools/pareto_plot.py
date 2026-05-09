@@ -21,10 +21,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Iterable
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 from config import FIGURES_DIR, RESULTS_DIR
 from eval.plots import _setup_axes

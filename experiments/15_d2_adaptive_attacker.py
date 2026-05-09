@@ -32,7 +32,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import top_k_accuracy_score
 
 from attacks.closed_set import closed_set_reid

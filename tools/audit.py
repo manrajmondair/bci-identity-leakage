@@ -19,7 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
-from config import CACHE_DIR, RESULTS_DIR
+from config import RESULTS_DIR
 from data.physionet_loader import (
     PHYSIONET_DROP_SUBJECTS,
     PHYSIONET_RUNS_BASELINE,

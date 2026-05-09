@@ -19,9 +19,17 @@ All claims are scoped to *motor-imagery* EEG (left/right hand, both fists, both 
 
 PhysioNet uses the BCI2000 64-channel system at 160 Hz; IV-2a uses the Graz 22-channel system at 250 Hz. The cross-dataset A4 result tests whether claims transfer between these specific rigs after channel-subsetting and resampling. Whether claims transfer to consumer-grade headsets (e.g., Muse 4-channel, OpenBCI 8-channel) at lower SNR is not tested.
 
-### Adaptive attackers (partially addressed)
+### Adaptive attackers (now addressed)
 
-The original A1–A5 attacks use *generic* probes (kNN cosine, L2 logreg, 2-feature MLP). The D2 adaptive-attacker extension (`experiments/15_d2_adaptive_attacker.py`) tests *adaptive* attackers against DANN λ=0.2 specifically — including end-to-end encoder fine-tune. We have not run adaptive attackers against D1 ad-hoc transforms or D3 DP-SGD. **Implication:** the privacy numbers we report for D1 and D3 are **upper bounds on what a generic attacker achieves**; a defense-aware attacker could in principle do better.
+The original A1–A5 attacks used *generic* probes (kNN cosine, L2 logreg,
+2-feature MLP). All three defense families have since been re-evaluated
+against an end-to-end encoder-fine-tune adaptive attacker: D2 in
+`experiments/15`, D3 in `experiments/18`, and D1 in `experiments/23`.
+Headline result: only formal DP (D3) holds; DANN and every D1 point
+collapse *above* the no-defense A1 baseline of 0.411. Encoder fine-tune
+is, however, only one realization of "the attacker knows the defense";
+stronger attacks (gradient-leakage attacks against DP-SGD, membership-
+aware adaptive attacks) remain out of scope.
 
 ---
 
@@ -59,13 +67,43 @@ With 97 sex-known subjects and a Mann-Whitney U test, we can reliably detect eff
 
 The vanilla cross-subject EEGNet result in A1 (task 38.8%, leak 41.1%) depends critically on the `input_scale=1e6` correction. Without it, gradients vanish and EEGNet learns nothing (chance task acc, chance re-ID). This was discovered and patched mid-project — the implication is that the "EEGNet doesn't leak" framing one might extract from a *broken* EEGNet is misleading. Other architectural choices we didn't sweep (optimizer, schedule, regularization) may produce different absolute numbers.
 
-### D3 DP-SGD architectural confound
+### D3 DP-SGD architectural confound (now isolated)
 
-Opacus requires removing braindecode's `nn.utils.parametrize` (max-norm constraint on the spatial conv) and replacing BatchNorm with GroupNorm. These changes alone — *before any DP noise is added* — bring re-ID from 41% (A1 EEGNet baseline) to 3.8% (D3 no-DP baseline). The actual DP mechanism then buys an additional 1.6 pp at ε=3. **Implication:** the "DP-SGD reduces leakage by 39 pp" framing one might extract is misleading; ~37 pp of that comes from the architecture changes, ~1.6 pp from formal DP. The report decomposes this honestly. Better-tuned DP-SGD with the full EEGNet (using a non-Opacus DP framework) might give a different breakdown.
+Opacus requires removing braindecode's `nn.utils.parametrize` (max-norm
+constraint on the spatial conv) and replacing BatchNorm with GroupNorm.
+Experiment 19 (`experiments/19_dp_sgd_arch_ablation.py`) trains
+EEGNet with the same architectural surgery and the same SGD optimizer
+DP-SGD uses, but with the PrivacyEngine bypassed. The decomposition is
+direct:
 
-### Single-seed experiments
+- AdamW + BatchNorm (vanilla A1):           0.411 top-1.
+- SGD + GroupNorm, no DP (experiment 19):   0.044 top-1 (−36.7 pp).
+- SGD + GroupNorm + DP-SGD ε=3:             0.022 top-1 (−2.2 pp).
 
-Most of our experiments report a single seed-0 run. The multi-seed A4 extension (`experiments/14_a4_multi_seed.py`) provides a robustness CI on the headline AUC across 5 splits, but the other experiments don't yet have that. Cross-experiment seed sensitivity is plausibly small (the bootstrap CIs are tight) but not formally verified.
+**~89% of D3's empirical privacy comes from the architecture/optimizer
+change; ~5% from the formal noise mechanism.** This does NOT weaken
+the formal (ε, δ) guarantee — that bound is mathematical and
+attacker-agnostic regardless of which component contributes what
+fraction of the empirical privacy. The right read: GroupNorm-EEGNet
+is itself a much weaker EEG biometric than BatchNorm-EEGNet; DP-SGD
+adds a small additional empirical margin and the formal mathematical
+guarantee.
+
+### Single-seed experiments (mostly addressed)
+
+Most experiments report a single seed-0 run. Two extensions provide
+robustness CIs:
+
+- `experiments/14_a4_multi_seed.py` reports A4 across 5 random subject
+  splits (AUC = 0.934 ± 0.020).
+- `experiments/22_eegnet_age_seeds.py` reports the EEGNet subgroup
+  fairness pipeline across 5 seeds. The age-effect p-value is unstable
+  per seed (0.028 to 0.353; 1/5 below α=0.05) but the effect size is
+  consistent (Δ = +0.093 ± 0.030); Fisher's combined p across the 5
+  seeds is 0.0083.
+
+Other experiments still report a single seed; bootstrap CIs are tight
+but cross-seed sensitivity is not formally verified for them.
 
 ### DANN at the chosen λ values
 
@@ -111,15 +149,53 @@ A1 was originally run on Apple Silicon MPS for the EEGNet baseline (A1 cross-sub
 
 ---
 
+## A3 cross-session: small N
+
+The cross-session re-identification result is on BCI IV-2a only, n=9.
+A scaled-up replication on Lee 2019 OpenBMI (54 subjects × 2 sessions)
+was scaffolded as `experiments/20_a3_lee2019.py` and
+`colab/A3_lee2019.ipynb`, but the full Colab run did not complete in
+the project's compute budget — the OpenBMI Tokyo S3 mirror serves at
+~3 MB/s, and downloading the 64 GB raw corpus exceeded a single Colab
+session's wall budget. The A3 result reported here is therefore on
+n=9; cross-seed bootstrap CIs are wide. The structural finding
+(≥80% top-1 cross-session re-ID against chance 1/9) replicates the
+direction of published prior work but should not be cited as if it
+were a population-scale claim.
+
+---
+
 ## What this benchmark *does* establish
 
-Despite the limitations above, the empirical record on this scope is consistent and audit-clean:
+Despite the limitations above, the empirical record on this scope is
+consistent and audit-clean:
 
-1. Subject identity is recoverable from a deployed motor-imagery decoder's features at 89–100% top-1 across 104 subjects (A1).
-2. The recovery survives task changes (A2), session changes (A3), and unseen-subject generalization (A4 AUC 0.925).
-3. Ad-hoc input transforms (PCA, noise, channel-drop) are weak defenses — only high-σ noise meaningfully cracks Riemann, at the cost of task accuracy.
-4. Adversarial subject-invariance (DANN λ=0.2) buys 20 pp of privacy at zero task cost.
-5. Formal DP-SGD at ε=3 yields 2.2% leak (vs chance 0.96%) — but most of that gain is from the architectural side-effects of being Opacus-compatible.
-6. Within-cohort heterogeneity is large (49-pp decile gap on FBCSP); demographic axes (sex, age) we *can* test show no significant sex effect and a marginal age effect.
+1. Subject identity is recoverable from a deployed motor-imagery
+   decoder's features at 41–100% top-1 across 104 subjects (A1),
+   with the strongest classical pipeline (Riemann tangent-space)
+   reaching ceiling.
+2. The recovery survives task changes (A2 with motor-execution probe;
+   A2 with resting-state probe — Riemann recovers 94.1% from rest
+   alone), session changes (A3 IV-2a), unseen-subject generalization
+   (A4 AUC = 0.925, multi-seed 0.934 ± 0.020), and partial cross-
+   dataset transfer (A4 PhysioNet → IV-2a, AUC = 0.694).
+3. Membership inference works in the black-box setting on every
+   victim family (EEGNet AUC = 0.878, FBCSP = 0.819, Riemann = 1.000).
+4. Of three defense families, only formal differential privacy
+   (D3 DP-SGD ε=3) holds under matched adaptive attack:
+   - D1 PCA / noise / channel-drop fine-tune top-1: 0.640–0.758.
+   - D2 DANN λ=0.2 fine-tune top-1: 0.804.
+   - D3 DP-SGD ε=3 fine-tune top-1: 0.049.
+   - No-defense A1 baseline: 0.411.
+5. ~89% of D3's empirical privacy is contributed by the BatchNorm →
+   GroupNorm architectural change Opacus requires; ~5% by the formal
+   noise mechanism. The formal (ε, δ) guarantee is unaffected by
+   this decomposition.
+6. Within-cohort heterogeneity is large: EEGNet decile gap = 0.778
+   (5-seed mean), FBCSP = 0.490, Riemann = 0 (ceiling). Demographic
+   axes we can test show no significant sex effect; the EEGNet age
+   effect is real but underpowered per seed (Fisher combined
+   p = 0.0083 across 5 seeds).
 
-Numbered limitations above bound how far each claim can be extrapolated.
+Numbered limitations above bound how far each claim can be
+extrapolated.

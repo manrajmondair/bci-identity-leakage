@@ -21,7 +21,6 @@ from __future__ import annotations
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from braindecode.models import EEGNet
 from torch.autograd import Function
 

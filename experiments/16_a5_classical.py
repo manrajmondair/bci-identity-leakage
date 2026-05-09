@@ -22,7 +22,6 @@ import time
 from dataclasses import asdict, dataclass
 
 import numpy as np
-import torch.nn.functional as F
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, roc_curve
 

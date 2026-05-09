@@ -16,7 +16,6 @@ from functools import lru_cache
 from pathlib import Path
 
 import mne
-import numpy as np
 from mne.datasets import eegbci
 from mne.io import concatenate_raws, read_raw_edf
 

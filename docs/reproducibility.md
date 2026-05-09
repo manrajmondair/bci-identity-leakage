@@ -75,9 +75,14 @@ Every result JSON is keyed by an `experiments/NN_*.py` script. Below is the cano
 | Result | Script | Wall |
 |---|---|---|
 | Adaptive attacker vs DANN λ=0.2 | `experiments.15_d2_adaptive_attacker --all` | ~35 min L4 |
+| Adaptive attacker vs DP-SGD ε=3 | `experiments.18_d3_adaptive_attacker --all` | ~45 min L4 |
+| Adaptive attacker vs D1 (PCA / noise / channel-drop) | `experiments.23_d1_adaptive_attacker --all` | ~55 min L4 |
 | MI on Riemann | `experiments.16_a5_classical --victim riemann --all` | ~30 min L4 |
 | MI on FBCSP | `experiments.16_a5_classical --victim fbcsp --all` | ~55 min L4 |
-| EEGNet subgroup fairness | `experiments.17_subgroup_fairness_eegnet --all` | ~25 min L4 |
+| EEGNet subgroup fairness (single seed) | `experiments.17_subgroup_fairness_eegnet --all` | ~25 min L4 |
+| EEGNet subgroup fairness (5 seeds) | `experiments.22_eegnet_age_seeds --all` | ~50 min L4 |
+| DP-SGD architecture ablation | `experiments.19_dp_sgd_arch_ablation --all` | ~30 min L4 |
+| A2 with resting-state probe | `experiments.21_a2_vs_rest --all` | ~35 min L4 |
 | Local subgroup fairness (FBCSP+Riemann) | `tools.subgroup_fairness --models fbcsp riemann` | ~12 min Mac CPU |
 
 ### Pareto + audit

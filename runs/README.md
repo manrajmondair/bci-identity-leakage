@@ -27,6 +27,6 @@ runs/
 }
 ```
 
-Notebooks under `colab/` write this file at the end of every run; the user sends it back along with the canonical result JSON. Both get committed to the repo so any number in the milestone or final report can be traced to a specific commit + hardware + timestamp.
+Notebooks under `colab/` write this file at the end of every run; the result JSON and meta JSON are committed to canonical paths so any number in the milestone or final report can be traced to a specific commit + hardware + timestamp.
 
-Mac-local runs (e.g. classical baseline reruns) follow the same pattern; the helper that produces `meta.json` lives in `eval/run_meta.py` (TODO: add a thin wrapper for Mac runs so the provenance trail is symmetric).
+The audit history is persisted under `runs/` as `<timestamp>_audit_<sha>/audit.{md,json}` — one subdirectory per `python -m tools.audit` invocation. The latest audit on the canonical commit returns 76 OK / 0 WARN / 0 FAIL.

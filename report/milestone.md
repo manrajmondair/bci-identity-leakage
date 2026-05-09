@@ -616,12 +616,19 @@ substantially tightened:
    §4.6 (D3) and §4.10 (D1) extend the encoder-fine-tune attack to
    the remaining two defense families. D3 holds, D1 collapses,
    matching the predictions in the milestone-time discussion.
-2. **Cross-dataset cohort small.** IV-2a's 9 subjects bound the
-   cross-dataset AUC CI. **Partially addressed:** experiment 20
-   (`A3_lee2019.ipynb`) replicates A3 cross-session on Lee 2019
-   OpenBMI (54 subjects × 2 sessions) and is queued / pending at
-   submission; a passing replication there would convert A3 from
-   "n=9 anecdote" to "two-dataset confirmed."
+2. **Cross-session cohort small (n=9 IV-2a).** A scaled-up replication
+   on Lee 2019 OpenBMI (54 subjects × 2 sessions) was scaffolded as
+   `experiments/20_a3_lee2019.py` plus `colab/A3_lee2019.ipynb`. The
+   moabb-mediated download from the Tokyo OpenBMI mirror serves at
+   ~3 MB/s for the 64 GB raw corpus; a single Colab session
+   (compute-budget capped) cannot complete the download plus training
+   plus attack within wall budget. The A3 result reported here is
+   therefore on IV-2a only; the Lee 2019 replication is left as
+   future work and the small-N status is documented honestly. The
+   structural A3 finding (≥80% top-1 cross-session re-ID against
+   chance 1/9 = 11%) replicates the direction of published prior
+   work on cross-session EEG biometrics, but should not be cited
+   as a population-scale claim.
 3. ~~**DP-SGD architectural confound.**~~ **Resolved.** §4.7
    reports the AdamW+BN / SGD+GN-no-DP / SGD+GN+DP breakdown
    directly (36.7 pp from architecture, 2.2 pp from DP noise).

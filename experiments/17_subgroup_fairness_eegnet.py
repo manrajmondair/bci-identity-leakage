@@ -21,11 +21,9 @@ import argparse
 import csv
 import json
 import time
-from pathlib import Path
 
 import numpy as np
 import scipy.stats
-import torch
 from sklearn.linear_model import LogisticRegression
 
 from config import RESULTS_DIR, ROOT
