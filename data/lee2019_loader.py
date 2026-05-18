@@ -186,3 +186,61 @@ def load_subject_session(
 def valid_subjects() -> list[int]:
     """All 54 Lee2019 motor-imagery subjects."""
     return list(range(1, 55))
+
+
+# ---------- compact-cache loader ----------
+#
+# When data/lee2019_prefetch.py has been run, each (subject, session) pair
+# lives as a small float16 .npz on disk. This is dramatically faster (and
+# disk-cheaper) than re-downloading + decoding the original ~600 MB .mat
+# through moabb on every Colab session.
+
+import os as _os  # noqa: E402
+
+from preprocess.windows import WindowedDataset as _WD  # noqa: E402
+
+
+def _compact_cache_dir() -> "os.PathLike | None":
+    """Return the Drive cache root if set via env, else None.
+
+    The env var matches what `data.lee2019_prefetch` writes to.
+    """
+    cd = _os.environ.get("BCI_LEE2019_CACHE")
+    if cd:
+        return _os.path.expanduser(cd)
+    return None
+
+
+def _compact_path(subject_id: int, session: str) -> "os.PathLike | None":
+    cd = _compact_cache_dir()
+    if cd is None:
+        return None
+    s_num = 1 if session in ("session_1", "0", "0train", "train") else 2
+    path = _os.path.join(cd, "lee2019_mi", "windowed",
+                         f"subj{subject_id:02d}_sess{s_num}.npz")
+    return path if _os.path.isfile(path) else None
+
+
+def load_subject_session_compact(subject_id: int, session: str = "session_1") -> _WD:
+    """Load one (subject, session) pair from the compact .npz cache.
+
+    Falls back to the moabb path (`load_subject_session`) if the compact
+    cache is unset or missing.
+    """
+    path = _compact_path(subject_id, session)
+    if path is None:
+        return load_subject_session(subject_id, session=session)
+
+    with np.load(path, allow_pickle=False) as z:
+        X = z["X"].astype(np.float32)
+        y = z["y"].astype(np.int64)
+        trial_ids = z["trial_ids"].astype(np.int64)
+        run_ids = z["run_ids"].astype(np.int64)
+        chans = tuple(name.decode("utf-8").strip() for name in z["channel_names"])
+        sfreq = float(z["sfreq"][0])
+
+    s = np.full_like(trial_ids, subject_id, dtype=np.int64)
+    return _WD(
+        X=X, y=y, subject_ids=s, trial_ids=trial_ids, run_ids=run_ids,
+        sfreq=sfreq, channel_names=chans,
+    )

@@ -37,7 +37,8 @@ import numpy as np
 
 from attacks.closed_set import closed_set_reid
 from config import FIGURES_DIR, RESULTS_DIR
-from data.lee2019_loader import load_subject_session, valid_subjects
+from data.lee2019_loader import load_subject_session_compact as load_subject_session
+from data.lee2019_loader import valid_subjects
 from eval.plots import closed_set_bar_chart, closed_set_table
 from models.eegnet import EEGNetVictim
 from models.fbcsp import FBCSPVictim
