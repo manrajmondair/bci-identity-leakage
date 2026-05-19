@@ -811,6 +811,477 @@ def render_a2_vs_rest():
     print("regenerated figures/21_a2_vs_rest.pdf")
 
 
+# ---------------------------------------------------------------------------
+# Tier 1 + Tier 2 figure renderers
+# ---------------------------------------------------------------------------
+def render_lee2019_a3():
+    p = RESULTS_DIR / "20_a3_lee2019.json"
+    if not p.exists():
+        return
+    rows = json.loads(p.read_text())
+    n = rows[0]["n_subjects"]
+    closed_set_bar_chart(
+        rows, FIGURES_DIR / "20_a3_lee2019.pdf",
+        title=f"A3 cross-session re-ID  (Lee 2019, {n} subj)\n"
+              f"probe trained on session-1, tested on session-2",
+    )
+    print("regenerated figures/20_a3_lee2019.pdf")
+
+
+def _verification_panel_from_scores(scores_path, title, out_path):
+    """Render an A4-style verification panel when per-pair scores were saved."""
+    if not scores_path.exists():
+        return False
+    with np.load(scores_path) as z:
+        scores = z["scores"]; labels = z["labels"]
+    from sklearn.metrics import roc_auc_score, roc_curve
+    auc = float(roc_auc_score(labels, scores))
+    fpr, tpr, _ = roc_curve(labels, scores); fnr = 1 - tpr
+    eer = float((fpr[int(np.argmin(np.abs(fpr - fnr)))]
+                 + fnr[int(np.argmin(np.abs(fpr - fnr)))]) / 2)
+    verification_panel(scores=scores, labels=labels,
+                       auc=auc, eer=eer, out_path=out_path, title=title)
+    return True
+
+
+def render_lee2019_a4():
+    for variant, title in (("within_session", "within-session"),
+                            ("cross_session", "cross-session")):
+        meta_path = RESULTS_DIR / f"24_a4_lee2019_{variant}.json"
+        if not meta_path.exists():
+            continue
+        meta = json.loads(meta_path.read_text())
+        scores_path = RESULTS_DIR / f"24_a4_lee2019_{variant}_scores.npz"
+        if scores_path.exists():
+            _verification_panel_from_scores(
+                scores_path,
+                title=(f"A4 open-set on Lee 2019  ({title})\n"
+                       f"{meta['n_test_subjects']} unseen subj, "
+                       f"{meta['n_pairs']:,} pairs"),
+                out_path=FIGURES_DIR / f"24_a4_lee2019_{variant}.pdf",
+            )
+            print(f"regenerated figures/24_a4_lee2019_{variant}.pdf")
+        else:
+            _summary_card(
+                title=f"A4 open-set on Lee 2019 ({title})",
+                lines=[
+                    f"train: {meta['n_train_subjects']} subjects",
+                    f"unseen test: {meta['n_test_subjects']} subjects",
+                    f"pairs: {meta['n_pairs']:,}",
+                    f"EER = {meta['eer']:.3f}",
+                ],
+                big_metric_label="AUC",
+                big_metric_value=meta["auc"],
+                big_metric_ci=(meta["auc_ci_low"], meta["auc_ci_high"]),
+                footer=f"Lee 2019 OpenBMI motor imagery — {variant}",
+                out_path=FIGURES_DIR / f"24_a4_lee2019_{variant}.pdf",
+            )
+            print(f"regenerated figures/24_a4_lee2019_{variant}.pdf (summary card)")
+
+
+def render_lee2019_a5():
+    p = RESULTS_DIR / "25_a5_lee2019.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    _summary_card(
+        title="A5 membership inference on Lee 2019",
+        lines=[
+            f"shadows: {d['n_shadows']} EEGNets on random 50% subject splits",
+            f"target: 1 EEGNet on own 50% subject split",
+            f"members vs non-members: "
+            f"{d['n_target_members']} vs {d['n_target_nonmembers']}",
+            f"advantage (TPR-FPR) = {d['advantage']:.3f}",
+        ],
+        big_metric_label="MI AUC",
+        big_metric_value=d["auc"],
+        big_metric_ci=(d["auc_ci_low"], d["auc_ci_high"]),
+        footer="Lee 2019 OpenBMI motor imagery, session 1",
+        out_path=FIGURES_DIR / "25_a5_lee2019.pdf",
+    )
+    print("regenerated figures/25_a5_lee2019.pdf")
+
+
+def render_xds_symmetric():
+    directions = [
+        ("iv2a_to_physionet",     "IV-2a → PhysioNet"),
+        ("physionet_to_lee2019",  "PhysioNet → Lee 2019"),
+        ("lee2019_to_physionet",  "Lee 2019 → PhysioNet"),
+        ("iv2a_to_lee2019",       "IV-2a → Lee 2019"),
+    ]
+    rows = []
+    for direction, label in directions:
+        p = RESULTS_DIR / f"26_a4_xds_{direction}.json"
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        rows.append((label, d["auc"], d["auc_ci_low"], d["auc_ci_high"],
+                     d["n_train_subjects"], d["n_test_subjects"]))
+    # Include the milestone direction (experiment 13) as the fifth bar
+    p13 = RESULTS_DIR / "13_a4_cross_dataset.json"
+    if p13.exists():
+        d = json.loads(p13.read_text())
+        rows.append(("PhysioNet → IV-2a (milestone)",
+                     d["auc"], d["auc_ci_low"], d["auc_ci_high"],
+                     d.get("n_train_subjects", "?"),
+                     d.get("n_test_subjects", "?")))
+    if not rows:
+        return
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(7.0, 4.0))
+    labels = [r[0] for r in rows]
+    aucs = np.array([r[1] for r in rows])
+    err_lo = aucs - np.array([r[2] for r in rows])
+    err_hi = np.array([r[3] for r in rows]) - aucs
+    colors = ["#27ae60" if v >= 0.6 else "#c0392b" for v in aucs]
+    bars = ax.barh(labels, aucs, xerr=[err_lo, err_hi], color=colors,
+                   edgecolor="#2c3e50", linewidth=0.8, capsize=4)
+    ax.axvline(0.5, color="#7f8c8d", linestyle="--", linewidth=0.8,
+               label="chance (AUC = 0.5)")
+    ax.set_xlim(0.4, 1.0); ax.set_xlabel("AUC")
+    ax.set_title("A4 cross-dataset verification (4 symmetric directions + milestone)")
+    for r, b in zip(rows, bars):
+        ax.text(b.get_width() + 0.005, b.get_y() + b.get_height() / 2,
+                f"{r[1]:.3f}  (train n={r[4]} / unseen n={r[5]})",
+                va="center", fontsize=8)
+    ax.legend(loc="lower right", fontsize=8, frameon=False)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "26_a4_xds_symmetric.pdf", dpi=200,
+                bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/26_a4_xds_symmetric.pdf")
+
+
+def render_dp_aware_mia():
+    for tag in ("", "_eps1.0", "_eps0.5"):
+        p = RESULTS_DIR / f"27_d3_membership_aware_attacker{tag}.json"
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        eps = d["target_epsilon"]
+        _summary_card(
+            title=f"DP-aware MIA  (target ε = {eps})",
+            lines=[
+                f"shadows: {d['n_shadows']} DP-SGD EEGNets",
+                f"target: 1 DP-SGD EEGNet, ε_final = "
+                f"{d.get('target_final_epsilon', float('nan')):.3f}",
+                f"members vs non-members: "
+                f"{d['n_target_members']} vs {d['n_target_nonmembers']}",
+                f"advantage (TPR-FPR) = {d['advantage']:.3f}",
+                f"undefended-EEGNet baseline AUC: "
+                f"{d['baseline_auc_undefended_eegnet']:.3f}",
+            ],
+            big_metric_label="MI AUC",
+            big_metric_value=d["auc"],
+            big_metric_ci=(d["auc_ci_low"], d["auc_ci_high"]),
+            footer=f"DP-aware shadow MIA against DP-SGD ε = {eps}",
+            out_path=FIGURES_DIR
+                / f"27_d3_membership_aware_attacker{tag or '_eps3.0'}.pdf",
+        )
+        print(f"regenerated figures/27_d3_membership_aware_attacker{tag or '_eps3.0'}.pdf")
+
+
+def render_model_inversion():
+    p = RESULTS_DIR / "28_d3_model_inversion.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    plt.rcParams.update(_setup_axes())
+    fig, axes = plt.subplots(1, 2, figsize=(8.5, 3.6))
+    arms = list(d["results"].keys())
+    rank1 = [d["results"][a]["rank1_acc"] for a in arms]
+    rank5 = [d["results"][a]["rank5_acc"] for a in arms]
+    chance1 = 1.0 / d["results"][arms[0]]["n_subjects"]
+    chance5 = 5.0 / d["results"][arms[0]]["n_subjects"]
+    colors = ["#34495e" if "no" in a else "#8e44ad" for a in arms]
+
+    axes[0].bar(arms, rank1, color=colors, edgecolor="#2c3e50")
+    axes[0].axhline(chance1, color="#7f8c8d", ls="--", lw=0.8,
+                    label=f"chance ({chance1:.3f})")
+    axes[0].set_ylim(0, max(0.2, max(rank1) + 0.05))
+    axes[0].set_ylabel("rank-1 recovery")
+    axes[0].set_title("Model inversion rank-1")
+    axes[0].legend(fontsize=8, frameon=False)
+
+    axes[1].bar(arms, rank5, color=colors, edgecolor="#2c3e50")
+    axes[1].axhline(chance5, color="#7f8c8d", ls="--", lw=0.8,
+                    label=f"chance ({chance5:.3f})")
+    axes[1].set_ylim(0, max(0.3, max(rank5) + 0.05))
+    axes[1].set_ylabel("rank-5 recovery")
+    axes[1].set_title("Model inversion rank-5")
+    axes[1].legend(fontsize=8, frameon=False)
+
+    fig.suptitle(
+        f"Fredrikson-style model inversion  (n_targets={d['n_targets']}, "
+        f"n_steps={d['n_inversion_steps']})",
+        fontsize=11, y=1.02,
+    )
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "28_d3_model_inversion.pdf", dpi=200,
+                bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/28_d3_model_inversion.pdf")
+
+
+def render_eps_sweep():
+    p = RESULTS_DIR / "29_d3_eps_sweep.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    pareto = d["pareto"]
+    # Sort by final epsilon ascending; treat None as infinity.
+    pareto = sorted(pareto, key=lambda r: (r["target_epsilon"] is None,
+                                            r["target_epsilon"] or 0))
+    eps_labels = []
+    for r in pareto:
+        if r["target_epsilon"] is None:
+            eps_labels.append("no DP")
+        else:
+            eps_labels.append(f"ε={r['target_epsilon']:g}")
+    task = [r["task_acc"] for r in pareto]
+    lr_top1 = [r["attack_logreg"]["top1"] for r in pareto]
+    ft_top1 = [r["attack_finetune"]["top1"] for r in pareto]
+    chance = pareto[0]["attack_logreg"]["chance_top1"]
+    no_def_baseline = next((r["attack_finetune"]["top1"]
+                            for r in pareto if r["target_epsilon"] is None),
+                           None)
+
+    plt.rcParams.update(_setup_axes())
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.0))
+
+    x = np.arange(len(eps_labels))
+    axes[0].plot(x, lr_top1, marker="o", color="#2980b9",
+                 label="logreg probe (generic)")
+    axes[0].plot(x, ft_top1, marker="s", color="#c0392b",
+                 label="encoder fine-tune (adaptive)")
+    axes[0].axhline(chance, ls="--", color="#7f8c8d", lw=0.8,
+                    label=f"chance ({chance:.4f})")
+    if no_def_baseline is not None:
+        axes[0].axhline(no_def_baseline, ls=":", color="#34495e", lw=0.8,
+                        label=f"SGD+GN fine-tune ({no_def_baseline:.3f})")
+    axes[0].set_xticks(x); axes[0].set_xticklabels(eps_labels)
+    axes[0].set_xlabel("DP-SGD target ε")
+    axes[0].set_ylabel("A1 re-ID top-1")
+    axes[0].set_title("Re-ID top-1 vs DP budget")
+    axes[0].legend(fontsize=8, frameon=False)
+
+    axes[1].plot(x, task, marker="^", color="#27ae60")
+    axes[1].set_xticks(x); axes[1].set_xticklabels(eps_labels)
+    axes[1].set_xlabel("DP-SGD target ε")
+    axes[1].set_ylabel("task accuracy")
+    axes[1].set_title("Task accuracy vs DP budget")
+    axes[1].set_ylim(0.2, 0.35)
+
+    fig.suptitle(
+        "D3 DP-SGD privacy–utility frontier (PhysioNet, 104 subjects, EEGNet victim)",
+        fontsize=11, y=1.02,
+    )
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "29_d3_eps_sweep.pdf", dpi=200,
+                bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/29_d3_eps_sweep.pdf")
+
+
+def render_theory_scaling():
+    p = RESULTS_DIR / "30_theory_scaling.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    plt.rcParams.update(_setup_axes())
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.0))
+
+    # Left: top-1 vs N for EEGNet and Riemann
+    ax = axes[0]
+    for victim, color, marker in (("eegnet", "#2980b9", "o"),
+                                  ("riemann", "#c0392b", "s")):
+        rows = d.get("scaling", {}).get(victim, [])
+        if not rows:
+            continue
+        ns = [r["n"] for r in rows]
+        t1 = [r["top1"] for r in rows]
+        ax.plot(ns, t1, marker=marker, color=color, label=victim.title())
+    chance = [1.0 / r["n"] for r in d["scaling"]["eegnet"]]
+    ns_chance = [r["n"] for r in d["scaling"]["eegnet"]]
+    ax.plot(ns_chance, chance, ls="--", color="#7f8c8d", lw=0.8,
+            label="chance (1/N)")
+    ax.set_xlabel("cohort size N (PhysioNet subjects)")
+    ax.set_ylabel("A1 closed-set top-1")
+    ax.set_title("Re-ID accuracy vs cohort size")
+    gamma_fit = (d.get("scaling_fits", {}) or {}).get("eegnet", {}).get("gamma")
+    if isinstance(gamma_fit, (int, float)):
+        ax.text(0.55, 0.85, f"EEGNet γ = {gamma_fit:.3f}",
+                transform=ax.transAxes, fontsize=10, color="#2980b9",
+                fontweight="bold")
+    ax.legend(fontsize=8, frameon=False)
+
+    # Right: Yeom bound vs empirical at each epsilon
+    ax = axes[1]
+    overlay = d.get("yeom_overlay") or []
+    if overlay:
+        eps_x = []
+        bound = []
+        emp_lr = []
+        emp_ft = []
+        for r in overlay:
+            eps = r["final_epsilon"] if r["final_epsilon"] is not None else 12.0
+            eps_x.append(eps)
+            bound.append(r["yeom_bound_re_id_upper"])
+            emp_lr.append(r["empirical_logreg_top1"])
+            emp_ft.append(r["empirical_finetune_top1"])
+        idx = np.argsort(eps_x)
+        eps_x = np.asarray(eps_x)[idx]
+        bound = np.asarray(bound)[idx]
+        emp_lr = np.asarray(emp_lr)[idx]
+        emp_ft = np.asarray(emp_ft)[idx]
+        ax.plot(eps_x, bound, marker="o", color="#7f8c8d",
+                label="Yeom (2018) bound  1 − e⁻ᵉᵖˢ − δ")
+        ax.plot(eps_x, emp_lr, marker="s", color="#2980b9",
+                label="logreg probe (empirical)")
+        ax.plot(eps_x, emp_ft, marker="^", color="#c0392b",
+                label="encoder fine-tune (empirical)")
+        ax.set_xlabel("DP-SGD final ε (RDP-accounted; no-DP plotted at 12)")
+        ax.set_ylabel("re-ID top-1 / MI advantage upper bound")
+        ax.set_title("Yeom bound vs empirical re-ID")
+        ax.legend(fontsize=8, frameon=False)
+        ax.set_xscale("log")
+    else:
+        ax.text(0.5, 0.5, "Yeom overlay not generated\n"
+                          "(run experiment 29 first)",
+                ha="center", va="center", transform=ax.transAxes,
+                fontsize=10, color="#7f8c8d")
+        ax.axis("off")
+
+    fig.suptitle("Theoretical scaling validation (experiment 30)",
+                 fontsize=11, y=1.02)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "30_theory_scaling.pdf", dpi=200,
+                bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/30_theory_scaling.pdf")
+
+
+def render_federated_dp():
+    p = RESULTS_DIR / "31_federated_dp.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    eps_rdp = d.get("epsilon_participant_level_rdp",
+                    d.get("informal_epsilon_participant_level"))
+    _summary_card(
+        title="D4 federated DP-FedAvg",
+        lines=[
+            f"clients: {d['n_subjects']} (one per PhysioNet subject)",
+            f"rounds: {d['n_rounds']}, participation: "
+            f"{d['participant_fraction']*100:.0f}%, local epochs: {d['local_epochs']}",
+            f"clip norm: {d['clip_norm']}, noise σ: {d['noise_sigma']}",
+            f"task acc: {d['task_acc']:.3f}  "
+            f"logreg top-1: {d['attack_logreg']['top1']:.3f}",
+            f"participant-level ε (RDP, δ=1e-5): {eps_rdp:.2f}",
+        ],
+        big_metric_label="fine-tune top-1",
+        big_metric_value=d["attack_finetune"]["top1"],
+        big_metric_ci=(d["attack_finetune"]["top1_ci_low"],
+                       d["attack_finetune"]["top1_ci_high"]),
+        footer="FedAvg + central-DP server noise; raw EEG never pooled",
+        out_path=FIGURES_DIR / "31_federated_dp.pdf",
+    )
+    print("regenerated figures/31_federated_dp.pdf")
+
+
+def render_lee2019_fairness():
+    p = RESULTS_DIR / "32_fairness_lee2019.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    plt.rcParams.update(_setup_axes())
+    fig, axes = plt.subplots(1, 3, figsize=(11.5, 3.6))
+    for ax, victim in zip(axes, ("fbcsp", "riemann", "eegnet")):
+        if victim not in d["victim_results"]:
+            ax.axis("off"); continue
+        v = d["victim_results"][victim]
+        h = v["heterogeneity"]
+        per_subj = v.get("per_subject_accuracy")
+        if per_subj:
+            accs = np.array(list(per_subj.values()))
+        else:
+            accs = np.array([h["min"], h["mean"], h["max"]])
+        ax.hist(accs, bins=15, color="#3498db", edgecolor="#2c3e50", alpha=0.85)
+        ax.axvline(h["mean"], color="#c0392b", lw=1.2,
+                   label=f"mean {h['mean']:.3f}")
+        ax.set_title(
+            f"{victim.upper()}  task={v['task_acc']:.3f}\n"
+            f"decile gap = {h['decile_gap']:.3f}",
+            fontsize=10,
+        )
+        ax.set_xlim(0, 1.05)
+        ax.set_xlabel("per-subject A1 top-1")
+        ax.legend(fontsize=8, frameon=False)
+    fig.suptitle("Lee 2019 within-cohort heterogeneity (54 subjects, within-session)",
+                 fontsize=11, y=1.02)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "32_fairness_lee2019.pdf", dpi=200,
+                bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/32_fairness_lee2019.pdf")
+
+
+def render_asymmetry_mechanism():
+    p = RESULTS_DIR / "33_a4_asymmetry_mechanism.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    _summary_card(
+        title="Lee 2019 → PhysioNet asymmetry mechanism test",
+        lines=[
+            f"contrastive label: synthetic 4-class (hand × early/late half)",
+            f"train: {d['n_train_subjects']} Lee 2019 subjects, session 1",
+            f"unseen test: {d['n_test_subjects']} PhysioNet subjects",
+            f"binary baseline (exp 26): AUC = {d['binary_baseline_auc']:.3f}",
+            f"hypothesis supported: {d['hypothesis_supported']}",
+        ],
+        big_metric_label=f"AUC (lift = {d['auc_lift_over_binary_baseline']:+.3f})",
+        big_metric_value=d["auc"],
+        big_metric_ci=(d["auc_ci_low"], d["auc_ci_high"]),
+        footer="Task-complexity falsifier for the Lee 2019 → PhysioNet direction",
+        out_path=FIGURES_DIR / "33_a4_asymmetry_mechanism.pdf",
+    )
+    print("regenerated figures/33_a4_asymmetry_mechanism.pdf")
+
+
+def render_multi_seed():
+    p = RESULTS_DIR / "34_tier1_multi_seed.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    rows = []
+    for target, t_data in d["rows"].items():
+        for metric, agg in t_data["aggregated"].items():
+            rows.append((f"{target}::{metric}", agg["mean"], agg["std"],
+                         agg["n"]))
+    if not rows:
+        return
+    plt.rcParams.update(_setup_axes())
+    fig, ax = plt.subplots(figsize=(8.0, 0.35 * len(rows) + 1.8))
+    labels = [r[0] for r in rows]
+    means = np.array([r[1] for r in rows])
+    stds = np.array([r[2] for r in rows])
+    ns = [r[3] for r in rows]
+    ax.barh(labels, means, xerr=stds, color="#16a085",
+            edgecolor="#0d6e60", linewidth=0.8, capsize=4)
+    for i, (m, s, n) in enumerate(zip(means, stds, ns)):
+        ax.text(m + 0.01, i, f"{m:.3f} ± {s:.3f}  (n={n})",
+                va="center", fontsize=8)
+    ax.set_xlim(0, max(1.0, (means + stds).max() + 0.1))
+    ax.set_xlabel("metric value (mean ± std across seeds)")
+    ax.set_title(f"Tier-1 multi-seed sweep  ({d['seeds']})")
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "34_tier1_multi_seed.pdf", dpi=200,
+                bbox_inches="tight")
+    plt.close(fig)
+    print("regenerated figures/34_tier1_multi_seed.pdf")
+
+
 def main() -> None:
     print("Regenerating all figures from result JSONs ...\n")
     for fn in (
@@ -820,20 +1291,30 @@ def main() -> None:
         lambda: render_d1_other("channel_drop"),
         render_d2_dann, render_d3,
         render_subgroup_fairness,
-        # Extension batch (cross-dataset, multi-seed, adaptive, classical MI,
-        # EEGNet fairness)
+        # Milestone extension batch
         render_a4_cross_dataset,
         render_a4_multi_seed,
         render_adaptive_attacker,
         render_a5_classical,
         render_subgroup_fairness_eegnet,
-        # Extension batch v2 (D3 holds under fine-tune; arch ablation;
-        # 5-seed age replication; D1 adaptive collapse; rest-state A2)
         render_d3_adaptive_attacker,
         render_dp_sgd_arch_ablation,
         render_eegnet_age_seeds,
         render_d1_adaptive_attacker,
         render_a2_vs_rest,
+        # Tier 1 + Tier 2 batch
+        render_lee2019_a3,
+        render_lee2019_a4,
+        render_lee2019_a5,
+        render_xds_symmetric,
+        render_dp_aware_mia,
+        render_model_inversion,
+        render_eps_sweep,
+        render_theory_scaling,
+        render_federated_dp,
+        render_lee2019_fairness,
+        render_asymmetry_mechanism,
+        render_multi_seed,
         # Pareto last so it sees every defense JSON if newly added
         render_pareto,
     ):
