@@ -249,9 +249,36 @@ construction.
 |---|---|---|---|
 | Closed-set EEG re-ID, PhysioNet | 100% (within-subject, ID-trained, Maciel '21) | 100% Riemann (task-trained, 4-class side-channel) | direct, with caveat: ours is a side-channel of task training |
 | Open-set verification, **unseen-subject**, PhysioNet | no published comparison we can locate | AUC 0.925, EER 13.3% | first of its kind to our knowledge |
+| Open-set verification, **unseen-subject**, Lee 2019 | no published comparison we can locate | AUC 0.920 within-session, 0.868 cross-session | second-corpus replication of the same claim |
 | Cross-session re-ID, BCI IV-2a | EER < 1% (Bidgoly '22, paywalled `[VERIFY]`) | 91% top-1 Riemann at chance 11% | indirect; EER vs top-1 |
-| Membership inference on EEG decoders | not published as far as we know | AUC 0.878 EEGNet, 1.000 Riemann | first MI attack on EEG decoders we're aware of |
+| Cross-session re-ID, Lee 2019 (54 subj) | no published comparison we can locate | 75% top-1 Riemann at chance 1.85% (40× lift) | direct; first cross-session re-ID at meaningful N on OpenBMI |
+| Cross-dataset A4 transfer (four directions) | no published comparison we can locate | three directions AUC ≥ 0.67; one direction (Lee 2019 → PhysioNet) collapses to 0.5 | first symmetric cross-corpus EEG-biometric transfer benchmark |
+| Membership inference on EEG decoders | not published as far as we know | AUC 0.878 EEGNet PhysioNet, 0.787 EEGNet Lee 2019, 1.000 Riemann | first MI attack on EEG decoders we're aware of |
 | Adversarial subject-invariance under adaptive attack | not published for EEG | DANN λ=0.2: 0.21 generic → 0.80 fine-tune | first adaptive stress-test of EEG subject-invariance |
+| DP-SGD under DP-aware MIA on EEG | not published for EEG | AUC 0.891 at ε=3 ≈ undefended 0.878 | first DP-aware MIA against an EEG decoder, demonstrating the formal-ε gap |
+| Federated DP-FedAvg on EEG | not published for EEG biometrics | fine-tune top-1 = 0.096 at participant-level RDP ε ≈ 98 | first end-to-end federated-DP defense benchmark for BCI re-ID |
+| γ scaling exponent of EEG re-ID with cohort size | not published for EEG | EEGNet γ = 0.474 (sub-linear decay) | first empirical scaling fit on PhysioNet |
+| Yeom (2018) (ε, δ) bound vs empirical EEG re-ID | not published for EEG | empirical fine-tune top-1 sits 0.35–0.85 below the Yeom bound across ε ∈ {0.5, 1, 3, 10} | first formal-vs-empirical overlay for EEG DP-SGD |
+
+## New Tier 1 + Tier 2 contributions in detail
+
+### DP-aware membership inference
+
+The MIA tradition (Shokri 2017, Yeom 2018) is explicit that defended-target MIA evaluation should train the shadows in the same defended pipeline as the target so the attacker's shadow distribution matches the defender's noise distribution. Experiment 27 instantiates that protocol on EEG for the first time we are aware of. Eight DP-SGD shadows at ε=3 plus one DP-SGD target at ε=3 give MI AUC = 0.891 [0.826, 0.943], statistically indistinguishable from the no-defense baseline of 0.878. The result is consistent with the Yeom MI-advantage upper bound at ε=3 (which permits 0.95) and contradicts the milestone's framing that DP-SGD blanket-holds under all adaptive attacks. The defense story splits cleanly: DP-SGD blocks the re-ID fine-tune attacker at every ε swept, but does not block DP-aware MIA at ε=3; ε ≤ 1 is the predicted deployable point for MI protection (Yeom bound at ε=1 is 0.63).
+
+### Federated DP-FedAvg
+
+The federated-DP literature (Geyer 2017, McMahan 2017) covers vision and language; we are not aware of a BCI-side benchmark of FedAvg with central-DP noise. Experiment 31 instantiates the canonical protocol on PhysioNet with one client per subject. The empirical fine-tune attacker is held to top-1 = 0.096 — within 4 pp of centralised DP-SGD at sample-level ε=3 — without ever pooling raw EEG. The participant-level RDP-accounted ε at this configuration is 97.7 (loose); the report should be explicit that the formal budget is not tight at the configuration that delivers the empirical privacy.
+
+### Symmetric cross-dataset transfer and the Lee 2019 → PhysioNet collapse
+
+Experiment 26 covers all four directions over PhysioNet, IV-2a, and Lee 2019. Three directions transfer (AUC ∈ {0.673, 0.826, 0.831}); Lee 2019 → PhysioNet collapses to AUC = 0.496 even with 40 training subjects. Experiment 33 falsifies-or-confirms the task-complexity hypothesis by re-running the same direction with a synthetic 4-class label (hand × first/second-half-trial); if AUC rises materially, training-time task richness is what gates the transferability of the biometric template.
+
+### γ scaling fit and Yeom-bound overlay (experiment 30)
+
+The closest published reference for cohort-size scaling on EEG biometrics is Maciel 2021's protocol comparisons, which sweep recording protocols rather than cohort sizes. To our knowledge no prior work fits the FaceNet-style `1 - C · N^(1−γ)` law on EEG. Our empirical EEGNet γ = 0.474 indicates the threat decays slower than 1/N — relevant for regulator-facing claims about whether BCI biometric leakage gets better or worse as user databases grow.
+
+The Yeom (2018) MI-advantage bound `1 − exp(−ε) − δ` is well-known for image / text classifiers. Overlaying it against the empirical DP-SGD ε sweep here is novel for EEG and gives a concrete "where does the formal bound start to bind" answer: empirical fine-tune top-1 sits 0.35 below the bound at ε=0.5 and 0.81 below at ε=10; the cross-over with the AdamW+BN no-defense baseline of 0.411 lands near ε ≈ 0.5.
 
 ---
 

@@ -198,15 +198,20 @@ Mann-Whitney U two-sided (`scipy.stats.mannwhitneyu`) for Δ between sex groups 
 
 ### Audit invariants
 
-`tools/audit.py` runs 76 invariants over the cached results, including:
+`tools/audit.py` runs **240 invariants** over the cached results (the milestone-era 76 plus a Tier-1+2 block in `check_tier_1_2_results`), including:
 
 - shape and NaN/Inf checks on the windowed data
 - per-subject window count consistency (must be exactly 270 for imagery)
 - trial-id-to-subject uniqueness (no cross-subject collisions)
 - A1/A2/A3/A4 train/test set disjointness (closed-set vs open-set semantics)
-- bootstrap CI brackets the point estimate (sanity)
+- bootstrap CI brackets the point estimate on every result file
 - effect-size sanity vs published EEG re-ID literature (≥0.95 closed-set top-1 expected per Maiorana 2016, Yang & Deravi 2017)
 - a **shuffled-label negative control**: with random subject labels the same probe collapses to chance (0.0100 vs chance 0.0096)
+- Lee 2019 cross-session top-1 lifts above chance (40× chance for Riemann)
+- four cross-dataset directions have non-empty common-channel intersection at the shared 160 Hz target rate
+- DP-SGD final ε within 5% of target ε (RDP accountant consistency)
+- federated DP RDP-accounted ε is positive and δ = 1e-5 throughout
+- Yeom (ε, δ) bound holds empirically: fine-tune top-1 ≤ 1 - exp(-ε) - δ at every swept ε
 
 > Maiorana, E. (2016). **Deep learning for EEG-based biometric recognition.** *Pattern Recognition Letters*, 90, 27–32.
 
@@ -214,11 +219,58 @@ Mann-Whitney U two-sided (`scipy.stats.mannwhitneyu`) for Δ between sex groups 
 
 ---
 
-## 7. Software
+## 7. Tier 1 + Tier 2 extensions (experiments 20, 24–34)
+
+The milestone benchmarks the methodology above on PhysioNet plus a small IV-2a leg. The Tier 1 + Tier 2 extensions land a second large corpus, harder adaptive attackers, a deployable federated defense, a theoretical anchor, and multi-seed replication of the headline numbers. Each new experiment is reproducible from the same canonical-JSON + provenance-meta pattern as the milestone-era code.
+
+### 7.1 Lee 2019 OpenBMI second-corpus replication (experiments 20, 24, 25, 32)
+
+Lee 2019 publishes 54 subjects × 2 sessions on different days, binary left/right-hand motor imagery, 62 channels at 1000 Hz native. We ingest via a parallel range-request prefetcher (`data/lee2019_prefetch.py`) that downloads each (subject, session) .mat in eight concurrent HTTP Range chunks from Wasabi Tokyo, bandpasses, windows, resamples to 250 Hz, and writes a compact float16 .npz to the path configured by the `BCI_LEE2019_CACHE` environment variable.
+
+- **A3 cross-session (experiment 20):** train victim on session 1, train re-ID probe on session 1 embeddings, evaluate on session 2 embeddings. Chance = 1/54 ≈ 1.85%.
+- **A4 open-set verification (experiment 24):** 40 train / 14 held-out subjects; both within-session and cross-session evaluation protocols.
+- **A5 membership inference (experiment 25):** 12 EEGNet shadows on Lee 2019 session 1, 27 vs 27 split.
+- **Within-cohort fairness (experiment 32):** per-subject A1 attack accuracy across the 54 subjects; reports mean / decile gap / IQR per victim family. Demographic stratification requires per-subject metadata that the Lee 2019 paper does not publish (only cohort aggregates: 25F/29M, ages 24–35).
+
+### 7.2 Symmetric cross-dataset A4 (experiment 26)
+
+The milestone reported PhysioNet → IV-2a only. We extend this to the four remaining directions across PhysioNet, IV-2a, and Lee 2019. Each direction:
+
+1. Computes the channel intersection between source and destination (uppercase + dot-stripped name matching via `data.channel_subset`).
+2. Subsets both sides to that intersection.
+3. Resamples to a shared 160 Hz target rate.
+4. Trains the contrastive embedder on the source-side training subjects.
+5. Evaluates verification on the destination-side held-out subjects (offset subject ids ensure no collision with source ids during pair sampling).
+
+### 7.3 Asymmetry-mechanism experiment (experiment 33)
+
+Experiment 26 reported Lee 2019 → PhysioNet = AUC 0.496 while three of four other directions land at AUC ≥ 0.673. Experiment 33 tests the task-complexity hypothesis: re-train the Lee 2019 contrastive with a synthetic 4-class label (hand × first-half / second-half of trial) constructed without any additional task semantics. If AUC rises materially, training-time task richness is what gates the transferability of the biometric template.
+
+### 7.4 Stronger adaptive attackers (experiments 27, 28)
+
+- **DP-aware MIA (experiment 27):** both shadow models and target are DP-SGD-trained at the same ε. Per-(shadow, subject) features are mean per-window cross-entropy loss and mean max-softmax. Output filename keys on ε so a sweep across {0.5, 1.0, 3.0, ...} preserves each run's JSON.
+- **Fredrikson-style model inversion (experiment 28):** the encoder-fine-tune re-ID head from either a no-defense or a DP-SGD ε=3 victim is inverted in input space via Adam + per-channel-std feasibility projection. Reconstructions are scored in a reference contrastive embedder trained on 24 held-out subjects (disjoint from the inversion targets), so the judge has not seen the targets.
+
+### 7.5 Federated DP-FedAvg (experiment 31)
+
+Central-DP FedAvg with one client per PhysioNet subject. Per round: a random q = 50% of clients runs K = 3 local SGD epochs at lr = 5×10⁻³; the server clips per-client model deltas to ‖Δ‖₂ ≤ 1, sums, adds Gaussian noise with σ = 0.4, divides by participant count, applies. Participant-level (ε, δ) is computed by Opacus's `RDPAccountant` composing the per-round sub-sampled Gaussian; the older simpler-Gaussian-composition bound is preserved as a fallback when opacus is unavailable.
+
+### 7.6 Theoretical scaling and Yeom overlay (experiment 30)
+
+- **γ scaling fit:** the FaceNet-style claim `Pr[top-1 correct] ≈ 1 - C · N^(1−γ)` is fit by least squares on `log(1 − top1) vs log(N)` across N ∈ {10, 20, 40, 60, 80, 104} for EEGNet and Riemann.
+- **Yeom (2018) MI-bound overlay:** the (ε, δ)-DP bound on MI advantage is `1 − exp(−ε) − δ`; we overlay this against the empirical re-ID logreg and fine-tune top-1 from experiment 29 and report the per-ε gap.
+
+### 7.7 Multi-seed replication (experiment 34)
+
+A wrapper that loops over seeds {0..4} for experiments 20, 24, and all four directions of 26, then aggregates per-metric mean / std / n across seeds. Closes the single-seed weakness on the Tier-1 headline numbers; the milestone-era A4 PhysioNet result already carried a 5-seed extension (experiment 14).
+
+---
+
+## 8. Software
 
 | Component | Version pinned | Notes |
 |---|---|---|
-| Python | 3.11 | tested on Apple Silicon and Colab L4 |
+| Python | 3.11 | tested on Apple Silicon and Colab L4 / A100 |
 | PyTorch | 2.5.1 | stronger pin: torchaudio==2.5.1 (ABI match) |
 | mne | ≥ 1.7 | EDF I/O + filtering |
 | moabb | ≥ 1.1 | BCI IV-2a access |

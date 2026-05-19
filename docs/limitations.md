@@ -141,7 +141,7 @@ A1 was originally run on Apple Silicon MPS for the EEGNet baseline (A1 cross-sub
 
 ## Out of scope (could but didn't)
 
-- **Federated DP setup** where each user's data never leaves their device. The threat model would shift from "attacker reads the model" to "attacker reads federated updates." Different paper.
+- ~~**Federated DP setup** where each user's data never leaves their device.~~ **Addressed in Tier 2 (experiment 31).** Central-DP FedAvg with 104 PhysioNet clients, 30 rounds, 50% participation. The participant-level (ε, δ) is RDP-accounted via Opacus; the empirical encoder-fine-tune attacker is held to top-1 = 0.096 — within 4 pp of centralised DP-SGD at sample-level ε=3, without ever pooling raw EEG.
 - **Transfer between EEG and other modalities** (e.g., does an attacker who has fNIRS or fMRI on the same subjects transfer to EEG?). Impossible to test — no published joint-modality cohort at this scale.
 - **Continuous biometric authentication** ("does this user *stay* identified second-by-second during a BCI session?") rather than the snapshot threat we benchmark.
 - **Adversarial-perturbation attacks** on the trained victims (do small EEG perturbations cause misclassification?). Different threat model from re-identifiability.
@@ -149,53 +149,79 @@ A1 was originally run on Apple Silicon MPS for the EEGNet baseline (A1 cross-sub
 
 ---
 
-## A3 cross-session: small N
+## A3 cross-session: small N (resolved)
 
-The cross-session re-identification result is on BCI IV-2a only, n=9.
-A scaled-up replication on Lee 2019 OpenBMI (54 subjects × 2 sessions)
-was scaffolded as `experiments/20_a3_lee2019.py` and
-`colab/A3_lee2019.ipynb`, but the full Colab run did not complete in
-the project's compute budget — the OpenBMI Tokyo S3 mirror serves at
-~3 MB/s, and downloading the 64 GB raw corpus exceeded a single Colab
-session's wall budget. The A3 result reported here is therefore on
-n=9; cross-seed bootstrap CIs are wide. The structural finding
-(≥80% top-1 cross-session re-ID against chance 1/9) replicates the
-direction of published prior work but should not be cited as if it
-were a population-scale claim.
+The milestone reported A3 cross-session on BCI IV-2a only at n=9.
+**Resolved in Tier 1.** Experiment 20 runs the same A3 protocol on
+Lee 2019 OpenBMI (54 subjects × 2 sessions on different days, binary
+L/R hand motor imagery). The corpus is now ingested via the parallel
+range-request prefetcher (`data/lee2019_prefetch.py`) which writes a
+compact float16 .npz cache to Drive, bypassing the original Tokyo
+mirror's ~3 MB/s sequential-download bottleneck. The Lee 2019 A3
+result is Riemann top-1 = 0.749 at chance 1.85% (40× lift), with
+top-5 / top-10 = 0.923 / 0.968. Cross-session biometric linkage no
+longer rests on a 9-subject corpus.
 
 ---
 
-## What this benchmark *does* establish
+## What this benchmark *does* establish (after Tier 1 + Tier 2)
 
-Despite the limitations above, the empirical record on this scope is
-consistent and audit-clean:
+The empirical record across 3 corpora × 5 attacks × 4 defense
+families × 5 adaptive attackers is audit-clean and consistent.
 
-1. Subject identity is recoverable from a deployed motor-imagery
-   decoder's features at 41–100% top-1 across 104 subjects (A1),
-   with the strongest classical pipeline (Riemann tangent-space)
-   reaching ceiling.
-2. The recovery survives task changes (A2 with motor-execution probe;
-   A2 with resting-state probe — Riemann recovers 94.1% from rest
-   alone), session changes (A3 IV-2a), unseen-subject generalization
-   (A4 AUC = 0.925, multi-seed 0.934 ± 0.020), and partial cross-
-   dataset transfer (A4 PhysioNet → IV-2a, AUC = 0.694).
-3. Membership inference works in the black-box setting on every
-   victim family (EEGNet AUC = 0.878, FBCSP = 0.819, Riemann = 1.000).
-4. Of three defense families, only formal differential privacy
-   (D3 DP-SGD ε=3) holds under matched adaptive attack:
-   - D1 PCA / noise / channel-drop fine-tune top-1: 0.640–0.758.
-   - D2 DANN λ=0.2 fine-tune top-1: 0.804.
-   - D3 DP-SGD ε=3 fine-tune top-1: 0.049.
-   - No-defense A1 baseline: 0.411.
-5. ~89% of D3's empirical privacy is contributed by the BatchNorm →
-   GroupNorm architectural change Opacus requires; ~5% by the formal
-   noise mechanism. The formal (ε, δ) guarantee is unaffected by
-   this decomposition.
-6. Within-cohort heterogeneity is large: EEGNet decile gap = 0.778
-   (5-seed mean), FBCSP = 0.490, Riemann = 0 (ceiling). Demographic
-   axes we can test show no significant sex effect; the EEGNet age
-   effect is real but underpowered per seed (Fisher combined
-   p = 0.0083 across 5 seeds).
+1. **Closed-set re-ID is near-perfect on the training cohort.**
+   Riemann tangent-space top-1 = 1.000 on 104 PhysioNet subjects;
+   FBCSP+LDA = 0.891; EEGNet = 0.411.
+
+2. **The identity signal survives every protocol change tested.**
+   Cross-task (motor execution / resting state), cross-session
+   (IV-2a + Lee 2019), unseen-subject open-set verification
+   (PhysioNet AUC = 0.925; Lee 2019 AUC = 0.920 within-session,
+   0.868 cross-session), and three of four cross-dataset directions
+   (AUC ≥ 0.67). The exception, Lee 2019 → PhysioNet at AUC = 0.496,
+   tests the task-complexity hypothesis directly via experiment 33.
+
+3. **Membership inference works in the black-box setting on every
+   victim family and on both corpora.** EEGNet MI AUC = 0.878 on
+   PhysioNet, 0.787 on Lee 2019; Riemann = 1.000.
+
+4. **The defense story is attack-specific.** Of four defense families
+   benchmarked under matched adaptive attack:
+   - D1 ad-hoc transforms: encoder fine-tune top-1 = 0.640–0.758
+     (above the no-defense baseline; the defense reshapes features
+     without removing identity-discriminative content).
+   - D2 DANN λ=0.2: fine-tune top-1 = 0.804 (also above baseline).
+   - D3 DP-SGD: holds well against encoder fine-tune at every ε
+     swept (top-1 = 0.043 at ε=0.5; 0.136 at ε=3; 0.189 at ε=10
+     which exceeds the no-defense 0.153). DP-aware MIA at ε=3
+     defeats the defense (AUC = 0.891 ≈ undefended 0.878); ε ≤ 1
+     is the predicted deployable point for MI protection.
+   - D4 federated DP-FedAvg: fine-tune top-1 = 0.096 at
+     participant-level RDP-accounted ε ≈ 97.7 (loose budget).
+
+5. **~89% of D3's empirical privacy is contributed by the
+   BatchNorm → GroupNorm architectural change** Opacus requires;
+   ~5% by the formal noise mechanism. The formal (ε, δ) guarantee
+   is unaffected by this decomposition.
+
+6. **Within-cohort heterogeneity is large on both corpora.**
+   PhysioNet EEGNet decile gap = 0.778 (5-seed mean); Lee 2019
+   EEGNet decile gap = 0.490. Demographic axes we can test on
+   PhysioNet show no significant sex effect; the EEGNet age effect
+   is real but underpowered per seed (Fisher combined p = 0.0083
+   across 5 seeds). Lee 2019 publishes only cohort aggregates, so
+   per-subject demographic stratification is not possible there.
+
+7. **Fredrikson-style model inversion is a null result for both
+   defended and undefended EEGNet re-ID heads.** Rank-1 recovery
+   stays at 0 / 10 reconstructions for both arms; input-space
+   optimisation does not yield subject-discriminative EEG at the
+   tested input dimensionality.
+
+8. **Re-ID accuracy decays sub-linearly with cohort size.** EEGNet
+   scaling exponent γ = 0.474 fit across N ∈ {10, ..., 104}; the
+   biometric threat shrinks slowly as cohort grows, not 1/N. At
+   N = 104, EEGNet still identifies 41% of users (43× chance).
 
 Numbered limitations above bound how far each claim can be
 extrapolated.

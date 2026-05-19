@@ -20,7 +20,7 @@ pip install -e ".[dev]"
 
 # Sanity-check the env
 python -c "import mne, torch, braindecode, pyriemann, opacus, moabb"
-python -m tools.audit                      # 76 invariants over the cached results
+python -m tools.audit                      # 240 invariants over the cached results
 ```
 
 Hard pin: `torch==2.5.1` + `torchaudio==2.5.1`. The pip resolver otherwise pulls a `torchaudio` (e.g., 2.11) whose ABI mismatches torch and produces an obscure dlopen failure at import — see commit history for the original debugging story.
@@ -43,6 +43,24 @@ python -m data.prefetch_direct --runs imagery execution --workers 8
 
 BCI IV-2a (~150 MB) downloads on first call to `data.bciiv2a_loader.load_subject_session(...)`. The wrapper has a built-in retry-with-backoff (`data.bciiv2a_loader._get_subject_data_with_retry`) for moabb/pooch's no-retry behavior — required at least once when an `IncompleteRead` mid-stream killed an earlier Colab run.
 
+Lee 2019 OpenBMI motor imagery (~65 GB raw on Wasabi Tokyo) is fetched
+by `data.lee2019_prefetch`, which downloads each (subject, session) .mat
+in parallel 8-way HTTP Range chunks, bandpasses and windows on the fly,
+and writes a compact float16 .npz cache. Total Drive footprint after a
+full run is ~4 GB rather than ~65 GB:
+
+```bash
+python -m data.lee2019_prefetch \
+    --cache-dir $BCI_LEE2019_CACHE \
+    --subjects 1-54 --sessions 1,2 --workers 8
+```
+
+All Lee 2019 experiments (20, 24, 25, 26, 32, 33, 34) read this compact
+cache via `BCI_LEE2019_CACHE`. The prefetcher is resumable per
+(subject, session); the standard workflow runs it once in a CPU Colab
+session pointed at Drive and then every GPU experiment can read the
+cache instantly.
+
 ## Reproducing each result
 
 Every result JSON is keyed by an `experiments/NN_*.py` script. Below is the canonical command and target file for each.
@@ -53,11 +71,17 @@ Every result JSON is keyed by an `experiments/NN_*.py` script. Below is the cano
 |---|---|---|---|---|
 | A1 closed-set | `experiments.02_closed_set_reid` | `--all` | L4 (EEGNet) / Mac (FBCSP, Riemann) | ~50 min |
 | A2 cross-task | `experiments.04_a2_cross_task` | `--all` | L4 | ~25 min |
-| A3 cross-session | `experiments.05_a3_cross_session` | `--all` | L4 | ~10 min |
-| A4 open-set | `experiments.06_a4_open_set` | `--all` | L4 | ~35 min |
+| A3 cross-session (IV-2a) | `experiments.05_a3_cross_session` | `--all` | L4 | ~10 min |
+| A4 open-set (PhysioNet) | `experiments.06_a4_open_set` | `--all` | L4 | ~35 min |
 | A5 MI (EEGNet) | `experiments.08_a5_membership_inference` | `--all` | L4 | ~30 min |
-| Cross-dataset A4 | `experiments.13_a4_cross_dataset` | `--all` | L4 | ~30 min |
-| Multi-seed A4 | `experiments.14_a4_multi_seed` | `--all` | L4 | ~55 min |
+| Cross-dataset A4 (PhysioNet → IV-2a) | `experiments.13_a4_cross_dataset` | `--all` | L4 | ~30 min |
+| Multi-seed A4 (PhysioNet, 5 seeds) | `experiments.14_a4_multi_seed` | `--all` | L4 | ~55 min |
+| **A3 cross-session (Lee 2019, n=54)** | `experiments.20_a3_lee2019` | `--all` | L4 (reads Drive cache) | ~50 min |
+| **A4 open-set (Lee 2019, 14 unseen)** | `experiments.24_a4_lee2019` | `--all` | L4 (reads Drive cache) | ~40 min |
+| **A5 MI (Lee 2019)** | `experiments.25_a5_lee2019` | `--all` | L4 (reads Drive cache) | ~45 min |
+| **Symmetric cross-dataset A4 (4 directions)** | `experiments.26_a4_cross_dataset_symmetric` | `--direction X --all` | L4 (reads Drive cache) | ~100 min total |
+| **Lee 2019 -> PhysioNet, synthetic 4-class** | `experiments.33_a4_asymmetry_mechanism` | `--all` | L4 (reads Drive cache) | ~40 min |
+| **Tier-1 multi-seed sweep** | `experiments.34_tier1_multi_seed` | `--full` | A100 or L4 | ~5–10 h |
 
 ### Defenses
 
@@ -68,7 +92,9 @@ Every result JSON is keyed by an `experiments/NN_*.py` script. Below is the cano
 | D1 channel-drop | `experiments.11_d1_adhoc` | `--transform channel_drop --all` | ~50 min L4 |
 | D2 DANN (4 points) | `experiments.09_d2_dann` | `--all` | ~50 min L4 |
 | D2 DANN extended | `experiments.09_d2_dann` | `--all --lambdas 0.05 0.2 0.3 0.7` | ~50 min L4 |
-| D3 DP-SGD | `experiments.10_d3_dp_sgd` | `--all` | ~55 min L4 |
+| D3 DP-SGD (3-point sweep) | `experiments.10_d3_dp_sgd` | `--all` | ~55 min L4 |
+| **D3 DP-SGD full ε sweep (Tier 2)** | `experiments.29_d3_eps_sweep` | `--all` | ~150 min L4 |
+| **D4 federated DP-FedAvg (Tier 2)** | `experiments.31_federated_dp` | `--all` | ~75 min L4 |
 
 ### Adaptive analyses
 
@@ -84,12 +110,17 @@ Every result JSON is keyed by an `experiments/NN_*.py` script. Below is the cano
 | DP-SGD architecture ablation | `experiments.19_dp_sgd_arch_ablation --all` | ~30 min L4 |
 | A2 with resting-state probe | `experiments.21_a2_vs_rest --all` | ~35 min L4 |
 | Local subgroup fairness (FBCSP+Riemann) | `tools.subgroup_fairness --models fbcsp riemann` | ~12 min Mac CPU |
+| **DP-aware MIA (ε=3 default, Tier 2)** | `experiments.27_d3_membership_aware_attacker --all` | ~3 h A100 |
+| **DP-aware MIA at smaller ε (Tier 2)** | `experiments.27_d3_membership_aware_attacker --all --target-epsilon 1.0` | ~3 h A100 |
+| **Fredrikson model inversion (Tier 2)** | `experiments.28_d3_model_inversion --all` | ~45 min L4 |
+| **Theoretical scaling validation (Tier 2)** | `experiments.30_theory_scaling --all` | ~60 min L4 |
+| **Lee 2019 within-cohort fairness (Tier 1)** | `experiments.32_fairness_lee2019 --all` | ~35 min L4 (reads Drive cache) |
 
 ### Pareto + audit
 
 ```bash
 python -m tools.pareto_plot                # consolidates all defense JSONs
-python -m tools.audit                      # 76 invariants
+python -m tools.audit                      # 240 invariants
 ```
 
 ## Colab path
@@ -144,7 +175,7 @@ This is the audit trail. To verify a number in the report:
 The chain of evidence is OK iff `python -m tools.audit` returns:
 
 ```
-=== SUMMARY: 76 OK, 0 WARN, 0 FAIL ===
+=== SUMMARY: 240 OK, 0 WARN, 0 FAIL ===
 ```
 
 Any FAIL on a pull request blocks merge. Latest passing audit run is in `runs/<latest>_audit_<sha>/audit.md`.
