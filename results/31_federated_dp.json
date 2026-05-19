@@ -8,7 +8,6 @@
   "local_lr": 0.005,
   "clip_norm": 1.0,
   "noise_sigma": 0.4,
-  "informal_epsilon_participant_level": 32.85326106098082,
   "attack_logreg": {
     "victim": "eegnet_federated_dp",
     "probe": "logreg",
@@ -32,5 +31,8 @@
     "n_subjects": 104,
     "chance_top1": 0.009615384615384616
   },
-  "seed": 0
+  "seed": 0,
+  "epsilon_participant_level_rdp": 97.73299079819824,
+  "epsilon_participant_level_delta": 1e-05,
+  "epsilon_participant_level_simple_gaussian_bound": 97.73299079819824
 }

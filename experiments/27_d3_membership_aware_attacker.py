@@ -250,7 +250,14 @@ def main() -> None:
     print(f"  Advantage (TPR - FPR) = {advantage:.4f}")
     print(f"  Undefended-EEGNet baseline AUC (exp 08): {BASELINE_UNDEFENDED:.4f}\n")
 
-    out_path = RESULTS_DIR / "27_d3_membership_aware_attacker.json"
+    # Filename keys off target eps so a sweep across {0.5, 1.0, 3.0, ...}
+    # leaves each run's JSON in place. The original eps=3 file used the
+    # un-suffixed name; we keep that for backwards compatibility.
+    if abs(args.target_epsilon - 3.0) < 1e-9:
+        out_path = RESULTS_DIR / "27_d3_membership_aware_attacker.json"
+    else:
+        out_path = (RESULTS_DIR
+                    / f"27_d3_membership_aware_attacker_eps{args.target_epsilon}.json")
     out_path.write_text(json.dumps({**asdict(result),
                                     "shadow_epsilon_final_history": final_eps_history,
                                     "seed": args.seed}, indent=2))

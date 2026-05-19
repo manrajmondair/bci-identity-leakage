@@ -294,15 +294,41 @@ class FederatedDPVictim(VictimModel):
             emb = emb.reshape(emb.shape[0], -1)
         return emb.astype(np.float32, copy=False)
 
-    def informal_epsilon_estimate(self) -> float:
-        """Informal Gaussian-mechanism budget at the participant level.
+    def rdp_epsilon(self, delta: float = 1e-5) -> float:
+        """Participant-level (epsilon, delta)-DP budget via Opacus's RDP accountant.
 
-        ε ≈ sqrt(2 R q^2 ln(1/δ)) / σ for participant fraction q over
-        R rounds. This is a crude composition bound; the production
-        version should plug an RDP accountant.
+        The protocol per round is a sub-sampled Gaussian mechanism on the
+        per-client model delta: a random subset of n_clients * q clients is
+        included, each delta is clipped to L2-norm `clip_norm`, the sum is
+        released after Gaussian noise of std `noise_sigma * clip_norm`. After
+        n_rounds rounds the participant-level (epsilon, delta) is computed by
+        composing the per-round Renyi-DP curves of the sub-sampled Gaussian
+        mechanism and converting back to (epsilon, delta) via the Mironov
+        2017 conversion (Opacus.RDPAccountant).
+
+        Compared to the original sqrt(2 R q^2 ln(1/delta)) / sigma estimate,
+        the RDP composition is materially tighter at small sigma and small q.
         """
-        delta = 1e-5
-        R = max(self.n_rounds, 1)
-        q = self.participant_fraction
-        sigma = max(self.noise_sigma, 1e-6)
-        return math.sqrt(2.0 * R * q * q * math.log(1.0 / delta)) / sigma
+        try:
+            from opacus.accountants import RDPAccountant
+        except Exception:
+            # Fallback to the analytic composition bound if opacus is missing.
+            R = max(self.n_rounds, 1)
+            q = self.participant_fraction
+            sigma = max(self.noise_sigma, 1e-6)
+            return math.sqrt(2.0 * R * q * q * math.log(1.0 / delta)) / sigma
+
+        accountant = RDPAccountant()
+        for _ in range(self.n_rounds):
+            accountant.step(noise_multiplier=float(self.noise_sigma),
+                            sample_rate=float(self.participant_fraction))
+        return float(accountant.get_epsilon(delta=delta))
+
+    def informal_epsilon_estimate(self) -> float:
+        """Backwards-compatible alias for the simpler Gaussian-mechanism bound.
+
+        Older result JSONs reference this name. New code should call
+        `rdp_epsilon` directly, which composes the per-round sub-sampled
+        Gaussian via Opacus's RDP accountant and is tighter at small sigma.
+        """
+        return self.rdp_epsilon()

@@ -378,6 +378,259 @@ def check_result_files(audit: Audit) -> dict:
 
 
 # -----------------------------------------------------------------------------
+# 6. Tier 1 + Tier 2 result-file invariants
+#
+# Covers experiments 20, 24-33. Each block enforces the same minimum quality
+# bar as the milestone-era JSONs: shape correctness, CI brackets the point,
+# parameters within plausible ranges, and protocol-specific sanity (e.g.
+# Lee 2019 cross-session lift over chance, DP final epsilon close to target).
+# -----------------------------------------------------------------------------
+def _ci_brackets(audit: "Audit", name: str, lo, point, hi) -> None:
+    audit.expect(name,
+                 lo is not None and hi is not None and lo <= point <= hi,
+                 f"low={lo} point={point} high={hi}")
+
+
+def _in_unit_interval(audit: "Audit", name: str, value, *, allow_close: bool = True) -> None:
+    if value is None:
+        audit.record(name, _FAIL, "value is None")
+        return
+    edge = 1e-6 if allow_close else 0.0
+    audit.expect(name,
+                 isinstance(value, (int, float)) and -edge <= value <= 1 + edge,
+                 f"value={value}")
+
+
+def check_tier_1_2_results(audit: "Audit") -> None:
+    print("\n## 7. TIER 1 + 2 RESULT INVARIANTS", flush=True)
+
+    # ---- experiment 20: Lee 2019 cross-session re-ID -------------------
+    p = RESULTS_DIR / "20_a3_lee2019.json"
+    if p.exists():
+        rows = json.loads(p.read_text())
+        audit.expect("20_a3_lee2019: rows present", len(rows) > 0, f"{len(rows)} rows")
+        for r in rows:
+            label = f"20_a3_lee2019 {r['victim']}/{r['probe']}"
+            _in_unit_interval(audit, f"{label} top1 in [0,1]", r.get("top1"))
+            _ci_brackets(audit, f"{label} CI brackets top1",
+                         r["top1_ci_low"], r["top1"], r["top1_ci_high"])
+            audit.expect(f"{label} chance matches 1/54",
+                         abs(r["chance_top1"] - 1/54) < 1e-6,
+                         f"chance={r['chance_top1']:.5f}")
+            audit.expect(f"{label} dataset tag set",
+                         r.get("dataset") == "lee2019", f"dataset={r.get('dataset')}")
+            audit.expect(f"{label} top1 above chance",
+                         r["top1"] > r["chance_top1"] * 5,
+                         f"top1={r['top1']:.3f}  chance={r['chance_top1']:.3f}")
+
+    # ---- experiment 24: A4 Lee 2019, within + cross session ------------
+    for variant in ("within_session", "cross_session"):
+        p = RESULTS_DIR / f"24_a4_lee2019_{variant}.json"
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        label = f"24_a4_lee2019_{variant}"
+        for k in ("auc", "auc_ci_low", "auc_ci_high", "eer"):
+            _in_unit_interval(audit, f"{label} {k} in [0,1]", d.get(k))
+        _ci_brackets(audit, f"{label} AUC CI brackets point",
+                     d["auc_ci_low"], d["auc"], d["auc_ci_high"])
+        audit.expect(f"{label} train/test subjects disjoint",
+                     not (set(d["train_subjects"]) & set(d["test_subjects"])),
+                     f"|train|={len(d['train_subjects'])} "
+                     f"|test|={len(d['test_subjects'])} "
+                     f"|overlap|={len(set(d['train_subjects']) & set(d['test_subjects']))}")
+        audit.expect(f"{label} AUC above chance",
+                     d["auc"] > 0.55, f"AUC={d['auc']:.3f}")
+
+    # ---- experiment 25: A5 Lee 2019 -----------------------------------
+    p = RESULTS_DIR / "25_a5_lee2019.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        label = "25_a5_lee2019"
+        for k in ("auc", "auc_ci_low", "auc_ci_high", "advantage", "advantage_threshold"):
+            v = d.get(k)
+            audit.expect(f"{label} {k} present", v is not None,
+                         f"{k}={v}")
+        _ci_brackets(audit, f"{label} AUC CI brackets",
+                     d["auc_ci_low"], d["auc"], d["auc_ci_high"])
+        audit.expect(f"{label} members + non-members = total",
+                     d["n_target_members"] + d["n_target_nonmembers"] == d["n_subjects"],
+                     f"M={d['n_target_members']} + "
+                     f"N={d['n_target_nonmembers']} vs "
+                     f"total={d['n_subjects']}")
+
+    # ---- experiment 26: symmetric cross-dataset A4 ---------------------
+    for direction in ("iv2a_to_physionet", "physionet_to_lee2019",
+                      "lee2019_to_physionet", "iv2a_to_lee2019"):
+        p = RESULTS_DIR / f"26_a4_xds_{direction}.json"
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        label = f"26_a4_xds_{direction}"
+        for k in ("auc", "auc_ci_low", "auc_ci_high", "eer"):
+            _in_unit_interval(audit, f"{label} {k} in [0,1]", d.get(k))
+        _ci_brackets(audit, f"{label} AUC CI brackets",
+                     d["auc_ci_low"], d["auc"], d["auc_ci_high"])
+        audit.expect(f"{label} common channels non-empty",
+                     d.get("common_channel_count", 0) >= 8,
+                     f"common channels = {d.get('common_channel_count')}")
+        audit.expect(f"{label} target sfreq = 160 Hz",
+                     abs(d["target_sfreq_hz"] - 160.0) < 0.5,
+                     f"sfreq={d['target_sfreq_hz']}")
+
+    # ---- experiment 27: DP-aware MIA  ---------------------------------
+    for eps_tag in ("", "_eps1.0", "_eps0.5"):
+        p = RESULTS_DIR / f"27_d3_membership_aware_attacker{eps_tag}.json"
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        label = f"27_d3_dp_aware_mia{eps_tag}"
+        _in_unit_interval(audit, f"{label} AUC in [0,1]", d.get("auc"))
+        _ci_brackets(audit, f"{label} AUC CI brackets",
+                     d["auc_ci_low"], d["auc"], d["auc_ci_high"])
+        audit.expect(f"{label} final eps close to target",
+                     d.get("target_final_epsilon") is not None
+                     and abs(d["target_final_epsilon"] - d["target_epsilon"])
+                         / max(d["target_epsilon"], 1e-6) < 0.05,
+                     f"target={d['target_epsilon']}  final={d.get('target_final_epsilon')}")
+        audit.expect(f"{label} delta is 1e-5",
+                     abs(d["target_delta"] - 1e-5) < 1e-12,
+                     f"delta={d['target_delta']}")
+
+    # ---- experiment 28: model inversion -------------------------------
+    p = RESULTS_DIR / "28_d3_model_inversion.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        label = "28_d3_model_inversion"
+        for arm in d["results"]:
+            arm_data = d["results"][arm]
+            _in_unit_interval(audit, f"{label} [{arm}] rank1 in [0,1]",
+                              arm_data.get("rank1_acc"))
+            _in_unit_interval(audit, f"{label} [{arm}] rank5 in [0,1]",
+                              arm_data.get("rank5_acc"))
+            audit.expect(f"{label} [{arm}] n_reconstructions = n_targets",
+                         arm_data["n_reconstructions"] == d["n_targets"],
+                         f"n_recon={arm_data['n_reconstructions']} "
+                         f"n_targets={d['n_targets']}")
+
+    # ---- experiment 29: DP-SGD eps sweep ------------------------------
+    p = RESULTS_DIR / "29_d3_eps_sweep.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        label = "29_d3_eps_sweep"
+        audit.expect(f"{label} pareto non-empty",
+                     len(d["pareto"]) > 0, f"{len(d['pareto'])} rows")
+        for row in d["pareto"]:
+            tag = f"{label}[{row['defense']}]"
+            if row["target_epsilon"] is not None:
+                audit.expect(
+                    f"{tag} final eps close to target",
+                    row["final_epsilon"] is not None
+                    and abs(row["final_epsilon"] - row["target_epsilon"])
+                        / max(row["target_epsilon"], 1e-6) < 0.05,
+                    f"target={row['target_epsilon']} "
+                    f"final={row['final_epsilon']}")
+            _in_unit_interval(audit, f"{tag} task acc in [0,1]", row.get("task_acc"))
+            _in_unit_interval(audit, f"{tag} logreg top1 in [0,1]",
+                              row["attack_logreg"].get("top1"))
+            _in_unit_interval(audit, f"{tag} fine-tune top1 in [0,1]",
+                              row["attack_finetune"].get("top1"))
+            _ci_brackets(audit, f"{tag} logreg CI brackets",
+                         row["attack_logreg"]["top1_ci_low"],
+                         row["attack_logreg"]["top1"],
+                         row["attack_logreg"]["top1_ci_high"])
+            _ci_brackets(audit, f"{tag} fine-tune CI brackets",
+                         row["attack_finetune"]["top1_ci_low"],
+                         row["attack_finetune"]["top1"],
+                         row["attack_finetune"]["top1_ci_high"])
+
+    # ---- experiment 30: theory scaling --------------------------------
+    p = RESULTS_DIR / "30_theory_scaling.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        label = "30_theory_scaling"
+        audit.expect(f"{label} cohort grid is increasing",
+                     d["cohort_grid"] == sorted(d["cohort_grid"]),
+                     f"cohort_grid={d['cohort_grid']}")
+        for victim in ("eegnet", "riemann"):
+            rows = d.get("scaling", {}).get(victim, [])
+            for r in rows:
+                _in_unit_interval(audit, f"{label} {victim} N={r['n']} top1",
+                                  r.get("top1"))
+        # Yeom overlay: empirical fine-tune top-1 must not exceed the Yeom bound.
+        if d.get("yeom_overlay"):
+            for r in d["yeom_overlay"]:
+                if r["yeom_bound_re_id_upper"] is None:
+                    continue
+                audit.expect(f"{label} fine-tune <= Yeom bound (eps={r['target_epsilon']})",
+                             r["empirical_finetune_top1"] <= r["yeom_bound_re_id_upper"] + 1e-9,
+                             f"emp={r['empirical_finetune_top1']:.3f}  "
+                             f"bound={r['yeom_bound_re_id_upper']:.3f}")
+
+    # ---- experiment 31: federated DP-FedAvg ---------------------------
+    p = RESULTS_DIR / "31_federated_dp.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        label = "31_federated_dp"
+        _in_unit_interval(audit, f"{label} task acc in [0,1]", d.get("task_acc"))
+        _in_unit_interval(audit, f"{label} logreg top1 in [0,1]",
+                          d["attack_logreg"].get("top1"))
+        _in_unit_interval(audit, f"{label} fine-tune top1 in [0,1]",
+                          d["attack_finetune"].get("top1"))
+        audit.expect(f"{label} rdp epsilon non-negative",
+                     d.get("epsilon_participant_level_rdp", -1) > 0,
+                     f"eps_rdp={d.get('epsilon_participant_level_rdp')}")
+        audit.expect(f"{label} delta is 1e-5",
+                     abs(d.get("epsilon_participant_level_delta", 0) - 1e-5) < 1e-12,
+                     f"delta={d.get('epsilon_participant_level_delta')}")
+
+    # ---- experiment 32: Lee 2019 fairness -----------------------------
+    p = RESULTS_DIR / "32_fairness_lee2019.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        label = "32_fairness_lee2019"
+        for v_name, v_data in d["victim_results"].items():
+            tag = f"{label}[{v_name}]"
+            _in_unit_interval(audit, f"{tag} task acc in [0,1]",
+                              v_data.get("task_acc"))
+            h = v_data["heterogeneity"]
+            for k in ("mean", "decile_gap", "iqr", "min", "max"):
+                _in_unit_interval(audit, f"{tag} heterogeneity.{k} in [0,1]",
+                                  h.get(k))
+            audit.expect(f"{tag} min <= mean <= max",
+                         h["min"] <= h["mean"] <= h["max"] + 1e-9,
+                         f"min={h['min']:.3f}  mean={h['mean']:.3f}  max={h['max']:.3f}")
+
+    # ---- experiment 33: asymmetry mechanism ---------------------------
+    p = RESULTS_DIR / "33_a4_asymmetry_mechanism.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        label = "33_asymmetry_mechanism"
+        for k in ("auc", "auc_ci_low", "auc_ci_high", "eer"):
+            _in_unit_interval(audit, f"{label} {k} in [0,1]", d.get(k))
+        _ci_brackets(audit, f"{label} AUC CI brackets",
+                     d["auc_ci_low"], d["auc"], d["auc_ci_high"])
+        audit.expect(f"{label} synthetic label histogram has 4 classes",
+                     len(d["synthetic_label_histogram"]) == 4,
+                     f"classes={list(d['synthetic_label_histogram'].keys())}")
+        audit.expect(f"{label} hypothesis_supported is a bool",
+                     isinstance(d.get("hypothesis_supported"), bool),
+                     f"hypothesis_supported={d.get('hypothesis_supported')}")
+
+    # ---- experiment 34: multi-seed sweep ------------------------------
+    p = RESULTS_DIR / "34_tier1_multi_seed.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        label = "34_tier1_multi_seed"
+        for t, t_data in d["rows"].items():
+            for name, agg in t_data["aggregated"].items():
+                audit.expect(f"{label}[{t}] {name} has 3+ seeds",
+                             agg["n"] >= 3, f"n={agg['n']}")
+                audit.expect(f"{label}[{t}] {name} std non-negative",
+                             agg["std"] >= 0, f"std={agg['std']}")
+
+
+# -----------------------------------------------------------------------------
 # 6. Effect-size sanity vs literature
 # -----------------------------------------------------------------------------
 def check_effect_sizes(audit: Audit) -> None:
@@ -432,6 +685,7 @@ def main() -> None:
     check_negative_control(audit)
     files = check_result_files(audit)
     check_effect_sizes(audit)
+    check_tier_1_2_results(audit)
 
     n_ok = sum(1 for e in audit.entries if e["status"] == _OK)
     n_warn = sum(1 for e in audit.entries if e["status"] == _WARN)

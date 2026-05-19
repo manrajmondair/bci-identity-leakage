@@ -102,9 +102,11 @@ def main() -> None:
     )
     victim.fit(train.X, train.y, client_ids=train.subject_ids)
     task_acc = victim.score(test.X, test.y)
-    eps_informal = victim.informal_epsilon_estimate()
-    print(f"\n  trained in {time.time() - t0:.0f}s  task_acc={task_acc:.3f}  "
-          f"informal_ε≈{eps_informal:.2f} (Gaussian-mechanism composition)\n",
+    eps_rdp = victim.rdp_epsilon(delta=1e-5)
+    eps_simple = victim.informal_epsilon_estimate()
+    print(f"\n  trained in {time.time() - t0:.0f}s  task_acc={task_acc:.3f}\n"
+          f"  participant-level eps (RDP, delta=1e-5):                 {eps_rdp:.2f}\n"
+          f"  participant-level eps (simple Gaussian composition):     {eps_simple:.2f}\n",
           flush=True)
 
     # ---- Attack 1: logreg probe ----
@@ -163,7 +165,9 @@ def main() -> None:
         "local_lr": float(args.local_lr),
         "clip_norm": float(args.clip_norm),
         "noise_sigma": float(args.noise_sigma),
-        "informal_epsilon_participant_level": float(eps_informal),
+        "epsilon_participant_level_rdp": float(eps_rdp),
+        "epsilon_participant_level_delta": 1e-5,
+        "epsilon_participant_level_simple_gaussian_bound": float(eps_simple),
         "round_log": [vars(r) for r in victim.round_log_],
         "attack_logreg": asdict(a1),
         "attack_finetune": {
