@@ -1,0 +1,14 @@
+{
+  "n_shadows": 12,
+  "n_subjects": 54,
+  "n_target_members": 27,
+  "n_target_nonmembers": 27,
+  "auc": 0.7873799725651578,
+  "auc_ci_low": 0.6583662860855843,
+  "auc_ci_high": 0.8956196153075535,
+  "advantage": 0.4444444444444445,
+  "advantage_threshold": 0.424884410750819,
+  "n_attack_features": 2,
+  "dataset": "lee2019",
+  "seed": 0
+}

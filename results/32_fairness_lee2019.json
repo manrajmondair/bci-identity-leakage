@@ -1,0 +1,42 @@
+{
+  "dataset": "lee2019",
+  "n_subjects": 54,
+  "victim_results": {
+    "fbcsp": {
+      "task_acc": 0.605925925925926,
+      "heterogeneity": {
+        "mean": 0.8026268015537205,
+        "std": 0.11746865103914324,
+        "decile_gap": 0.31728324532199026,
+        "iqr": 0.1701896194083694,
+        "min": 0.49765258215962443,
+        "max": 0.9656862745098039
+      },
+      "demographic_stratification": null
+    },
+    "riemann": {
+      "task_acc": 0.6728703703703703,
+      "heterogeneity": {
+        "mean": 0.9994894584674238,
+        "std": 0.0020264915713589103,
+        "decile_gap": 0.0,
+        "iqr": 0.0,
+        "min": 0.9873417721518988,
+        "max": 1.0
+      },
+      "demographic_stratification": null
+    },
+    "eegnet": {
+      "task_acc": 0.7157407407407408,
+      "heterogeneity": {
+        "mean": 0.4803884063986961,
+        "std": 0.18340471667473693,
+        "decile_gap": 0.49001030749512275,
+        "iqr": 0.2500987760481431,
+        "min": 0.14767932489451477,
+        "max": 0.9166666666666666
+      },
+      "demographic_stratification": null
+    }
+  }
+}

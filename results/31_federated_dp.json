@@ -1,0 +1,36 @@
+{
+  "n_subjects": 104,
+  "chance_top1": 0.009615384615384616,
+  "task_acc": 0.24946581196581197,
+  "n_rounds": 30,
+  "participant_fraction": 0.5,
+  "local_epochs": 3,
+  "local_lr": 0.005,
+  "clip_norm": 1.0,
+  "noise_sigma": 0.4,
+  "informal_epsilon_participant_level": 32.85326106098082,
+  "attack_logreg": {
+    "victim": "eegnet_federated_dp",
+    "probe": "logreg",
+    "n_subjects": 104,
+    "n_train_windows": 18720,
+    "n_test_windows": 9360,
+    "top1": 0.04401709401709402,
+    "top1_ci_low": 0.04006410256410257,
+    "top1_ci_high": 0.04818643162393162,
+    "top5": 0.14252136752136751,
+    "top10": 0.2341880341880342,
+    "chance_top1": 0.009615384615384616
+  },
+  "attack_finetune": {
+    "top1": 0.09615384615384616,
+    "top1_ci_low": 0.08931623931623932,
+    "top1_ci_high": 0.1026736111111111,
+    "top5": 0.3033119658119658,
+    "top10": 0.45908119658119656,
+    "n_test_windows": 9360,
+    "n_subjects": 104,
+    "chance_top1": 0.009615384615384616
+  },
+  "seed": 0
+}

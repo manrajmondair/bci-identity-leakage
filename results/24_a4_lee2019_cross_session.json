@@ -1,0 +1,18 @@
+{
+  "n_train_subjects": 40,
+  "n_test_subjects": 14,
+  "n_train_windows": 24000,
+  "n_test_windows": 8400,
+  "n_pairs": 50000,
+  "auc": 0.8675353648,
+  "auc_ci_low": 0.8645027827403796,
+  "auc_ci_high": 0.8705720371545917,
+  "eer": 0.2156,
+  "eer_threshold": 0.5441378355026245,
+  "dataset": "lee2019",
+  "eval_session": "session_2",
+  "cross_session": true,
+  "train_subjects": [1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 33, 35, 36, 37, 38, 39, 43, 44, 45, 46, 48, 49, 50, 51, 52, 53],
+  "test_subjects": [6, 8, 13, 14, 15, 16, 30, 32, 34, 40, 41, 42, 47, 54],
+  "seed": 0
+}

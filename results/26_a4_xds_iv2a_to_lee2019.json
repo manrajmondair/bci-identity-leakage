@@ -1,0 +1,19 @@
+{
+  "n_train_subjects": 9,
+  "n_test_subjects": 54,
+  "n_train_windows": 15552,
+  "n_test_windows": 32400,
+  "n_pairs": 50000,
+  "auc": 0.6725237848,
+  "auc_ci_low": 0.6680149572704587,
+  "auc_ci_high": 0.6772248083978092,
+  "eer": 0.3787,
+  "eer_threshold": 0.9992071986198425,
+  "direction": "iv2a_to_lee2019",
+  "train_dataset": "BCI Competition IV-2a (both sessions, pooled)",
+  "test_dataset": "Lee 2019 OpenBMI motor imagery (session 1)",
+  "common_channel_count": 21,
+  "common_channels": ["FZ","FC3","FC1","FC2","FC4","C5","C3","C1","CZ","C2","C4","C6","CP3","CP1","CPZ","CP2","CP4","P1","PZ","P2","POZ"],
+  "target_sfreq_hz": 160.0,
+  "seed": 0
+}
