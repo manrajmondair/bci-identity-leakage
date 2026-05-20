@@ -1,0 +1,18 @@
+{
+  "n_shadows": 8,
+  "n_subjects": 104,
+  "n_target_members": 52,
+  "n_target_nonmembers": 52,
+  "target_epsilon": 1.0,
+  "target_final_epsilon": 0.998405297625343,
+  "target_delta": 1e-05,
+  "max_grad_norm": 1.0,
+  "auc": 0.5059171597633136,
+  "auc_ci_low": 0.3932389937106918,
+  "auc_ci_high": 0.6144494575936883,
+  "advantage": 0.1346153846153847,
+  "advantage_threshold": 0.4995978345066593,
+  "baseline_auc_undefended_eegnet": 0.878,
+  "shadow_epsilon_final_history": [0.998405297625343, 0.998405297625343, 0.998405297625343, 0.998405297625343, 0.998405297625343, 0.998405297625343, 0.998405297625343, 0.998405297625343],
+  "seed": 0
+}

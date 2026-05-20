@@ -1,0 +1,23 @@
+{
+  "n_train_subjects": 40,
+  "n_test_subjects": 104,
+  "n_train_windows": 16000,
+  "n_test_windows": 28080,
+  "n_pairs": 50000,
+  "auc": 0.501403552,
+  "auc_ci_low": 0.4985621280548043,
+  "auc_ci_high": 0.5042560792535095,
+  "eer": 0.49928,
+  "eer_threshold": 1.0,
+  "direction": "lee2019_to_physionet_synthetic4class",
+  "train_dataset": "Lee 2019 OpenBMI motor imagery (session 1), synthetic 4-class label",
+  "test_dataset": "PhysioNet EEG-MMIDB (motor imagery)",
+  "synthetic_label_histogram": {"0": 4000, "1": 4000, "2": 4000, "3": 4000},
+  "common_channel_count": 48,
+  "common_channels": ["FP1","FP2","F7","F3","FZ","F4","F8","FC5","FC1","FC2","FC6","T7","C3","CZ","C4","T8","CP5","CP1","CP2","CP6","P7","P3","PZ","P4","P8","O1","OZ","O2","FC3","FC4","C5","C1","C2","C6","CP3","CPZ","CP4","P1","P2","POZ","TP7","TP8","AF7","AF3","AF4","AF8","PO3","PO4"],
+  "target_sfreq_hz": 160.0,
+  "binary_baseline_auc": 0.4959382008,
+  "auc_lift_over_binary_baseline": 0.005465351199999968,
+  "hypothesis_supported": false,
+  "seed": 0
+}
