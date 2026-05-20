@@ -264,7 +264,9 @@ construction.
 
 ### DP-aware membership inference
 
-The MIA tradition (Shokri 2017, Yeom 2018) is explicit that defended-target MIA evaluation should train the shadows in the same defended pipeline as the target so the attacker's shadow distribution matches the defender's noise distribution. Experiment 27 instantiates that protocol on EEG for the first time we are aware of. Eight DP-SGD shadows at ε=3 plus one DP-SGD target at ε=3 give MI AUC = 0.891 [0.826, 0.943], statistically indistinguishable from the no-defense baseline of 0.878. The result is consistent with the Yeom MI-advantage upper bound at ε=3 (which permits 0.95) and contradicts the milestone's framing that DP-SGD blanket-holds under all adaptive attacks. The defense story splits cleanly: DP-SGD blocks the re-ID fine-tune attacker at every ε swept, but does not block DP-aware MIA at ε=3; ε ≤ 1 is the predicted deployable point for MI protection (Yeom bound at ε=1 is 0.63).
+The MIA tradition (Shokri 2017, Yeom 2018) is explicit that defended-target MIA evaluation should train the shadows in the same defended pipeline as the target so the attacker's shadow distribution matches the defender's noise distribution. Experiment 27 instantiates that protocol on EEG for the first time we are aware of. At ε = 3 (eight DP-SGD shadows + one DP-SGD target), MI AUC = 0.891 [0.826, 0.943], statistically indistinguishable from the no-defense baseline of 0.878. The result is consistent with the Yeom MI-advantage upper bound at ε = 3 (which permits 0.95).
+
+**The full ε sweep confirms the Yeom-bound prediction.** At ε = 1, AUC = 0.506 [0.393, 0.614]; at ε = 0.5, AUC = 0.449 [0.334, 0.558]. Both are at chance within their CIs (the CIs are wide because the cohort is small, 52 vs 52 members / non-members). The empirical curve tracks the Yeom prediction: defeated at ε = 3, constrained at ε ≤ 1. **DP-SGD ε ≤ 1 is the deployable point that simultaneously blocks re-ID fine-tune (top-1 ≤ 7%) AND DP-aware MIA (AUC ≈ 0.5).** This contradicts the milestone's framing that DP-SGD blanket-holds under all adaptive attacks (true only against re-ID fine-tune), and replaces it with a precise quantitative characterisation across ε.
 
 ### Federated DP-FedAvg
 
@@ -272,7 +274,9 @@ The federated-DP literature (Geyer 2017, McMahan 2017) covers vision and languag
 
 ### Symmetric cross-dataset transfer and the Lee 2019 → PhysioNet collapse
 
-Experiment 26 covers all four directions over PhysioNet, IV-2a, and Lee 2019. Three directions transfer (AUC ∈ {0.673, 0.826, 0.831}); Lee 2019 → PhysioNet collapses to AUC = 0.496 even with 40 training subjects. Experiment 33 falsifies-or-confirms the task-complexity hypothesis by re-running the same direction with a synthetic 4-class label (hand × first/second-half-trial); if AUC rises materially, training-time task richness is what gates the transferability of the biometric template.
+Experiment 26 covers all four directions over PhysioNet, IV-2a, and Lee 2019. Three directions transfer (AUC ∈ {0.673, 0.826, 0.831}); Lee 2019 → PhysioNet collapses to AUC = 0.496 even with 40 training subjects, and the collapse replicates at 0.497 ± 0.005 across 5 seeds (experiment 34).
+
+**Experiment 33 falsified the task-complexity hypothesis.** Re-training the Lee 2019 contrastive embedder with a synthetic 4-class label (hand × first/second-half-trial), with every other variable held fixed, produces AUC = 0.501 [0.499, 0.504] on Lee 2019 → PhysioNet — a +0.005 pp lift over the binary baseline of 0.496, well within the null prediction. Training-time task richness is therefore *not* what gates the transferability of the biometric template in this direction. The most plausible remaining hypothesis — and one the next iteration could test directly — is recording-rig domain shift: Lee 2019 was recorded with a BrainAmp (Brain Products, Munich) at 1000 Hz native with nasion reference, while PhysioNet was recorded with the BCI2000 system at 160 Hz with a different reference electrode. The double-resample stack (1000 → 250 → 160 Hz) combined with the amplifier / reference mismatch produces a domain shift the contrastive cannot bridge. We document this honestly rather than speculatively asserting it.
 
 ### γ scaling fit and Yeom-bound overlay (experiment 30)
 

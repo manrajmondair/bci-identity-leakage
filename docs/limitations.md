@@ -178,8 +178,14 @@ families × 5 adaptive attackers is audit-clean and consistent.
    (IV-2a + Lee 2019), unseen-subject open-set verification
    (PhysioNet AUC = 0.925; Lee 2019 AUC = 0.920 within-session,
    0.868 cross-session), and three of four cross-dataset directions
-   (AUC ≥ 0.67). The exception, Lee 2019 → PhysioNet at AUC = 0.496,
-   tests the task-complexity hypothesis directly via experiment 33.
+   (AUC ≥ 0.67). The exception, Lee 2019 → PhysioNet at AUC = 0.496
+   (multi-seed 0.497 ± 0.005), has been tested against the
+   task-complexity hypothesis (experiment 33). **The hypothesis was
+   falsified**: a synthetic 4-class label on Lee 2019 produced
+   AUC = 0.501, no lift over the binary baseline. The asymmetry has
+   a different cause — most plausibly recording-rig domain shift
+   (BrainAmp vs BCI2000 amplifier; different reference electrode;
+   double-resample stack 1000 → 250 → 160 Hz).
 
 3. **Membership inference works in the black-box setting on every
    victim family and on both corpora.** EEGNet MI AUC = 0.878 on
@@ -194,8 +200,11 @@ families × 5 adaptive attackers is audit-clean and consistent.
    - D3 DP-SGD: holds well against encoder fine-tune at every ε
      swept (top-1 = 0.043 at ε=0.5; 0.136 at ε=3; 0.189 at ε=10
      which exceeds the no-defense 0.153). DP-aware MIA at ε=3
-     defeats the defense (AUC = 0.891 ≈ undefended 0.878); ε ≤ 1
-     is the predicted deployable point for MI protection.
+     defeats the defense (AUC = 0.891 ≈ undefended 0.878); **at
+     ε = 1 AUC drops to 0.506 [0.393, 0.614] and at ε = 0.5 to
+     0.449 [0.334, 0.558] — both at chance within their CIs**.
+     ε ≤ 1 is the deployable point that simultaneously blocks
+     re-ID fine-tune AND DP-aware MIA.
    - D4 federated DP-FedAvg: fine-tune top-1 = 0.096 at
      participant-level RDP-accounted ε ≈ 97.7 (loose budget).
 

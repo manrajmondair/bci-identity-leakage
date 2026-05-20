@@ -54,15 +54,21 @@ inference with DP-trained shadows, Fredrikson model inversion).
   milestone-era weakness that cross-session held only at n = 9.
 - Cross-dataset A4 transfer is **direction-dependent**: PhysioNet →
   Lee 2019 = 0.826 and IV-2a → PhysioNet = 0.831 succeed, but Lee
-  2019 → PhysioNet collapses to 0.496. Experiment 33 falsifies-or-
-  confirms the task-complexity hypothesis for the asymmetry.
+  2019 → PhysioNet collapses to 0.496 (multi-seed mean 0.497 ± 0.005
+  across 5 seeds — a robust effect, not seed variance). **Experiment
+  33 falsified the task-complexity hypothesis**: a synthetic 4-class
+  label on Lee 2019 produces AUC = 0.501, no lift over the binary
+  baseline. The asymmetry has a different cause — most plausibly
+  recording-rig domain shift.
 - A full DP-SGD ε sweep over {0.5, 1, 3, 10, ∞} shows the
   **strong-privacy regime ε ≤ 1** blocks the encoder fine-tune
   attacker to ≤ 7% top-1 at ~6 pp task cost; **ε = 10 leaks more
   than no defense** (0.189 vs 0.153).
 - **DP-aware MIA** with shadows DP-trained at the target's ε defeats
-  DP-SGD at ε = 3: MI AUC = 0.891, statistically indistinguishable
-  from the undefended 0.878. The defense story is attack-specific.
+  DP-SGD at ε = 3: MI AUC = 0.891. At **ε = 1, AUC drops to 0.506**
+  [0.393, 0.614]; at **ε = 0.5, AUC = 0.449** [0.334, 0.558] —
+  both at chance within their CIs. The Yeom bound prediction holds:
+  ε ≤ 1 is the deployable point for MI protection.
 - **Federated DP-FedAvg** with 104 clients holds the fine-tune attacker
   to top-1 = 0.096, within 4 pp of centralised DP-SGD, without ever
   pooling raw EEG.
@@ -123,16 +129,22 @@ without pooling raw EEG.
 | D3 DP-SGD no DP (SGD + GroupNorm only)         | 0.032 | 0.153 | architectural baseline |
 | **D4 federated DP-FedAvg**                     | **0.044** | **0.096** | holds w/o pooling raw EEG |
 
-### Stronger adaptive attackers against DP-SGD ε=3
+### Stronger adaptive attackers against DP-SGD
 
-| Attacker | MI AUC / re-ID metric | vs no-defense baseline |
+| Attacker | MI AUC / re-ID metric (PhysioNet) | vs no-defense baseline |
 |---|---|---|
-| Generic logreg probe (re-ID, frozen encoder)    | top-1 = 0.030 | well below 0.411 |
-| Encoder fine-tune (re-ID, AdamW lr=5e-4 × 15ep) | top-1 = 0.136 | well below 0.411 |
-| **DP-aware MIA** (DP-trained shadows + target)  | **AUC = 0.891** [0.826, 0.943] | ≈ undefended 0.878 |
-| Fredrikson model inversion                      | rank-1 = 0.00, rank-5 = 0.10 | null result for both arms |
+| Generic logreg probe (re-ID, frozen encoder, ε=3)    | top-1 = 0.030 | well below 0.411 |
+| Encoder fine-tune (re-ID, AdamW lr=5e-4 × 15ep, ε=3) | top-1 = 0.136 | well below 0.411 |
+| **DP-aware MIA at ε = 3** (DP-trained shadows + target) | **AUC = 0.891** [0.826, 0.943] | ≈ undefended 0.878 |
+| **DP-aware MIA at ε = 1**                            | **AUC = 0.506** [0.393, 0.614] | at chance |
+| **DP-aware MIA at ε = 0.5**                          | **AUC = 0.449** [0.334, 0.558] | at chance |
+| Fredrikson model inversion (ε = 3)                   | rank-1 = 0.00, rank-5 = 0.10 | null result for both arms |
 
-DP-SGD at ε=3 holds well against re-ID fine-tune; it does **not** hold against DP-aware MIA. The Yeom (2018) MI-advantage upper bound at ε=3 is 0.95, so the formal guarantee is not violated — but the empirical defense story splits by attack type. ε ≤ 1 is the predicted deployable point for MI protection (Yeom bound at ε=1 is 0.63).
+The empirical DP-aware MIA curve tracks the Yeom (2018) prediction:
+defeated at ε = 3 (bound permits AUC up to 0.95), constrained at
+ε ≤ 1 (bound at 0.63). **DP-SGD ε ≤ 1 is the deployable point that
+simultaneously blocks re-ID fine-tune (top-1 ≤ 7%) and DP-aware MIA
+(AUC ≈ 0.5).**
 
 ### D3 architecture vs noise breakdown
 
@@ -382,10 +394,10 @@ A non-exhaustive list of caveats every reader should hold in mind:
   (fingerprint benchmarks exceed 10⁵ identities). Open-set claims at
   TUH-EEG scale (10⁴+ subjects) would strengthen the headline AUC =
   0.925 / 0.920 results.
-- **DP-aware MIA was tested at ε = 3 in this revision.** ε ≤ 1
-  experiments are predicted (Yeom bound at ε = 1 is 0.63) and the
-  matching notebook is wired (`colab/D3_membership_aware_eps_sweep.ipynb`)
-  but the empirical numbers at ε ∈ {0.5, 1.0} land in the next batch.
+- **DP-aware MIA is now characterised across ε ∈ {0.5, 1.0, 3.0}.**
+  AUC drops to chance at ε ≤ 1; the wide CIs at the small cohort
+  (52 vs 52 members / non-members) leave room for a tighter
+  measurement at larger N.
 - **Cognitive-task generality.** All claims scope to motor imagery
   (and resting-state, via experiment 21). Whether the same patterns
   hold for ERP-based, sleep, or seizure EEG is open.
