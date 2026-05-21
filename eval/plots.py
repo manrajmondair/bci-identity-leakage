@@ -441,27 +441,30 @@ def verification_summary_card(
     seed_mean: float | None = None,
     seed_std: float | None = None,
 ) -> None:
-    """Bar chart rendering of a single AUC measurement, optionally
-    overlaid with per-seed dots from a multi-seed extension.
+    """Forest-plot rendering of an AUC measurement, optionally augmented
+    with per-seed dots from a multi-seed extension.
 
-    `extra_seeds` is a list of per-seed AUCs (e.g. from experiment 14 or
-    experiment 34); when supplied, they appear as a strip-plot beside
-    the main bar with mean and std summarised in the legend.
+    AUC is a position on a [0, 1] scale, not a quantity that grows from
+    zero, so the seed-0 measurement is drawn as a single point with a
+    vertical bootstrap-CI bracket — never as a bar climbing out of the
+    axis. When `extra_seeds` is supplied, those per-seed AUCs appear as
+    a small strip-plot at x=1 with a horizontal mean rule; both columns
+    share the same point encoding so the visual comparison is honest.
     """
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
 
-    # Primary bar (seed-0 measurement)
     err_hi = auc_ci_high - auc
     err_lo = auc - auc_ci_low
-    ax.bar([0], [auc],
-           yerr=[[err_lo], [err_hi]],
-           color=PALETTE["accent"], edgecolor=PALETTE["ink"],
-           linewidth=0.5, width=0.45,
-           error_kw=dict(ecolor=PALETTE["ink"], elinewidth=1.0,
-                         capsize=3.5, capthick=1.0),
-           label="seed-0 measurement",
-           zorder=2)
+
+    # Seed-0 measurement: forest-plot point with CI whiskers.
+    ax.errorbar([0], [auc], yerr=[[err_lo], [err_hi]],
+                fmt="o", color=PALETTE["accent"],
+                ecolor=PALETTE["ink"], elinewidth=1.0,
+                capsize=4.5, capthick=1.0,
+                markersize=9.0, markerfacecolor=PALETTE["accent"],
+                markeredgecolor=PALETTE["ink"], markeredgewidth=0.9,
+                zorder=4, label="seed-0 measurement (95% CI)")
 
     xticks = [0]
     xticklabels = ["seed 0"]
@@ -470,15 +473,15 @@ def verification_summary_card(
     if has_multi:
         seeds_arr = np.asarray(extra_seeds, dtype=float)
         rng = np.random.default_rng(0)
-        jit = rng.uniform(-0.07, 0.07, size=len(seeds_arr))
+        jit = rng.uniform(-0.08, 0.08, size=len(seeds_arr))
         ax.scatter(np.ones_like(seeds_arr) + jit, seeds_arr,
                    color=PALETTE["contrast"], edgecolor=PALETTE["ink"],
                    linewidth=0.6, s=42, zorder=3,
                    label=f"per-seed (n={len(seeds_arr)})")
         smean = seed_mean if seed_mean is not None else float(seeds_arr.mean())
         sstd = seed_std if seed_std is not None else float(seeds_arr.std(ddof=1))
-        ax.hlines(smean, 0.65, 1.35, color=PALETTE["ink"],
-                  lw=1.2, zorder=4,
+        ax.hlines(smean, 0.78, 1.22, color=PALETTE["ink"],
+                  lw=1.4, zorder=4,
                   label=f"multi-seed mean {smean:.3f} ± {sstd:.3f}")
         xticks.append(1)
         xticklabels.append("multi-seed")
@@ -489,19 +492,18 @@ def verification_summary_card(
     ax.set_xticklabels(xticklabels)
     ax.set_xlim(-0.55, 1.55 if has_multi else 0.55)
 
-    # Y-limits: leave enough headroom above the upper CI cap to fit both
-    # the gray CI bracket and the bold AUC numeral, and ensure the chance
-    # line stays clearly inside the box rather than flush with the spine.
+    # Y-limits: keep chance inside the box and leave headroom for the
+    # bold AUC numeral above the upper CI cap.
     top_data = max(auc + err_hi, max(extra_seeds) if has_multi else auc + err_hi)
-    bottom = min(chance - 0.06, auc_ci_low - 0.05)
-    ax.set_ylim(bottom, max(top_data + 0.18, 1.05))
+    bottom = min(chance - 0.06, auc_ci_low - 0.06)
+    ax.set_ylim(bottom, max(top_data + 0.16, 1.02))
     ax.set_ylabel("AUC")
 
-    # Value annotation: bold AUC numeral above the bar with the CI bracket
-    # tucked between it and the upper error-cap. Generous vertical spacing
-    # so the bracket characters never touch the bold value or the cap.
-    ci_y = auc + err_hi + 0.030
-    value_y = ci_y + 0.070
+    # Value annotation: bold AUC numeral above the seed-0 CI cap with the
+    # bracket text tucked between it and the cap. The point encoding
+    # leaves room for the label without inflating the data ink.
+    ci_y = auc + err_hi + 0.028
+    value_y = ci_y + 0.065
     ax.text(0, value_y, f"{auc:.3f}",
             ha="center", va="bottom", fontsize=11.0,
             fontweight="bold", color=PALETTE["ink"])

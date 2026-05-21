@@ -294,39 +294,45 @@ def _render_mi_card(*, label: str, auc: float, lo: float, hi: float,
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
     labels = ["MI AUC", "TPR − FPR advantage"]
     x = np.arange(len(labels))
-    values = np.array([auc, advantage])
-    err_lo = np.array([auc - lo, 0.0])
-    err_hi = np.array([hi - auc, 0.0])
-    colors = [PALETTE["accent"], PALETTE["warn"]]
-    bars = ax.bar(x, values, color=colors,
-                  yerr=[err_lo, err_hi],
-                  edgecolor=PALETTE["ink"], linewidth=0.5, width=0.50,
-                  error_kw=dict(ecolor=PALETTE["ink"], elinewidth=1.0,
-                                capsize=3.5, capthick=1.0))
-    # Bar value labels above the upper CI cap. The CI bracket sits just
-    # above the cap; the bold AUC numeral sits noticeably higher so the
-    # two pieces of text are visually distinct and neither overlaps the
-    # cap or each other.
-    ci_y = auc + err_hi[0] + 0.030
-    value_y = ci_y + 0.070
+    # Forest-plot points for both metrics. Neither AUC nor the
+    # TPR-FPR advantage is a quantity that grows out of zero — chance
+    # sits at 0.5 and 0 respectively — so bars from the axis would
+    # overstate magnitude. Points + chance reference lines read honestly.
+    ax.errorbar([x[0]], [auc], yerr=[[auc - lo], [hi - auc]],
+                fmt="o", color=PALETTE["accent"],
+                ecolor=PALETTE["ink"], elinewidth=1.0,
+                capsize=4.5, capthick=1.0,
+                markersize=9.0, markerfacecolor=PALETTE["accent"],
+                markeredgecolor=PALETTE["ink"], markeredgewidth=0.9,
+                zorder=4)
+    ax.plot([x[1]], [advantage], "o", color=PALETTE["warn"],
+            markersize=9.0, markerfacecolor=PALETTE["warn"],
+            markeredgecolor=PALETTE["ink"], markeredgewidth=0.9,
+            zorder=4)
+    # Annotations: bold value above the point, CI bracket just beneath
+    # for the AUC measurement. The advantage statistic in this experiment
+    # family is reported without a CI so we annotate it as a point value.
+    ci_y = auc + (hi - auc) + 0.028
+    value_y = ci_y + 0.065
     ax.text(x[0], value_y, f"{auc:.3f}",
             ha="center", va="bottom", fontsize=11.0,
             fontweight="bold", color=PALETTE["ink"])
     ax.text(x[0], ci_y, f"[{lo:.3f}, {hi:.3f}]",
             ha="center", va="bottom", fontsize=7.0,
             color=PALETTE["neutral"])
-    ax.text(x[1], advantage + 0.025, f"{advantage:.3f}",
+    ax.text(x[1], advantage + 0.045, f"{advantage:.3f}",
             ha="center", va="bottom", fontsize=11.0,
             fontweight="bold", color=PALETTE["ink"])
-    # Reference lines
-    ax.hlines(0.5, x[0] - 0.4, x[0] + 0.4, color=PALETTE["neutral"],
+    # Reference chance lines per column.
+    ax.hlines(0.5, x[0] - 0.40, x[0] + 0.40, color=PALETTE["neutral"],
               lw=1.0, ls=(0, (4, 3)),
               label="MI chance (AUC = 0.5)")
-    ax.hlines(0.0, x[1] - 0.4, x[1] + 0.4, color=PALETTE["neutral"],
+    ax.hlines(0.0, x[1] - 0.40, x[1] + 0.40, color=PALETTE["neutral"],
               lw=1.0, ls=":",
               label="advantage chance (0)")
     ax.set_xticks(x); ax.set_xticklabels(labels)
-    ax.set_ylim(-0.08, 1.28)
+    ax.set_xlim(-0.55, len(labels) - 0.45)
+    ax.set_ylim(-0.15, 1.18)
     ax.set_ylabel("metric value")
     # Cohort line as a subtitle below the axes title
     ax.set_title(
@@ -692,15 +698,20 @@ def render_a4_cross_dataset() -> None:
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
     err_lo = d["auc"] - d["auc_ci_low"]
     err_hi = d["auc_ci_high"] - d["auc"]
-    bar = ax.bar([0], [d["auc"]], yerr=[[err_lo], [err_hi]],
-                 color=PALETTE["warn"], edgecolor=PALETTE["ink"],
-                 linewidth=0.5, width=0.45,
-                 error_kw=dict(ecolor=PALETTE["ink"], elinewidth=1.0,
-                               capsize=3.5, capthick=1.0))
-    ax.text(0, d["auc"] + err_hi + 0.060, f"{d['auc']:.3f}",
+    # Forest-plot point with CI whiskers; AUC is a position on a [0, 1]
+    # scale, not a quantity climbing out of the axis, so a bar would
+    # mislead about magnitude relative to chance.
+    ax.errorbar([0], [d["auc"]], yerr=[[err_lo], [err_hi]],
+                fmt="o", color=PALETTE["warn"],
+                ecolor=PALETTE["ink"], elinewidth=1.0,
+                capsize=4.5, capthick=1.0,
+                markersize=9.0, markerfacecolor=PALETTE["warn"],
+                markeredgecolor=PALETTE["ink"], markeredgewidth=0.9,
+                zorder=4, label="cross-dataset AUC (95% CI)")
+    ax.text(0, d["auc"] + err_hi + 0.090, f"{d['auc']:.3f}",
             ha="center", va="bottom", fontsize=11.0,
             fontweight="bold", color=PALETTE["ink"])
-    ax.text(0, d["auc"] + err_hi + 0.030,
+    ax.text(0, d["auc"] + err_hi + 0.040,
             f"[{d['auc_ci_low']:.3f}, {d['auc_ci_high']:.3f}]",
             ha="center", va="bottom", fontsize=7.0,
             color=PALETTE["neutral"])
