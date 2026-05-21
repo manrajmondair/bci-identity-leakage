@@ -30,7 +30,7 @@ If AUC on Lee 2019 -> PhysioNet rises materially above the original
 0.496 with no other change, the task-complexity hypothesis is
 supported. If it stays near chance, the asymmetry has a different
 cause (recording-rig spectral content, channel set, sampling-rate
-artefact post-resample) and the writeup must say so.
+artefact post-resample).
 
 Reads from the Lee 2019 compact cache and PhysioNet on-disk EDFs.
 Set BCI_LEE2019_CACHE.

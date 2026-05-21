@@ -8,7 +8,7 @@ verbatim from its public source; provenance is documented here.
 
 **Source.** OpenNeuro dataset [ds004362](https://openneuro.org/datasets/ds004362) — a BIDS conversion of the same BCI2000 source recordings PhysioNet hosts as the EEG Motor Movement/Imagery Database. Same `sub-001` ↔ `S001` indexing.
 
-**Why we need it.** PhysioNet's EDF release scrubs subject metadata (`his_id: X, sex: 0` for every header), making demographic-stratified fairness analysis impossible on the canonical release. The OpenNeuro BIDS conversion republishes Gender + Age + Handedness for 95 of the 109 subjects with the same indexing. We map demographics back onto the PhysioNet release for the W5.1 fairness analysis (`tools/subgroup_fairness.py`).
+**Why we need it.** PhysioNet's EDF release scrubs subject metadata (`his_id: X, sex: 0` for every header), making demographic-stratified fairness analysis impossible on the canonical release. The OpenNeuro BIDS conversion republishes Gender + Age + Handedness for 95 of the 109 subjects with the same indexing. We map demographics back onto the PhysioNet release for the fairness analysis (`tools/subgroup_fairness.py`).
 
 **Schema.** Tab-separated, 4 columns:
 

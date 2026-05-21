@@ -1,12 +1,11 @@
 """D3 ε sweep — full privacy-utility Pareto under generic and adaptive attack.
 
-The milestone-time D3 result was reported at a single point ε=3. A
-reviewer can fairly ask whether the picture changes in the strong-
-privacy regime ε ∈ [0.5, 1] (where task accuracy is more pressured) or
-in the loose regime ε ≥ 10 (where the formal guarantee buys very
-little). This experiment sweeps five ε values and runs both attacks
-that mattered in the milestone (logreg probe and encoder fine-tune)
-against each:
+The original D3 result was reported at a single point ε=3. A reviewer
+can fairly ask whether the picture changes in the strong-privacy regime
+ε ∈ [0.5, 1] (where task accuracy is more pressured) or in the loose
+regime ε ≥ 10 (where the formal guarantee buys very little). This
+experiment sweeps five ε values and runs both attacks that matter in
+practice (logreg probe and encoder fine-tune) against each:
 
     ε ∈ { 0.5, 1.0, 3.0, 10.0, ∞ (= no DP) }
 

@@ -1,11 +1,10 @@
 """D4 — Federated DP-SGD on EEGNet (central-DP FedAvg).
 
-The original threat model (§1.1 of the milestone) frames the deployment
-target as on-device BCI inference. Centralised DP-SGD trains a single
-model on a pooled cohort; in a deployment world that pooling step is
-where users' EEG actually leaves the device. Federated learning
-inverts the data-flow: each user trains locally on their own device,
-the server only sees model updates.
+The threat model targets on-device BCI inference. Centralised DP-SGD
+trains a single model on a pooled cohort; in a deployment world that
+pooling step is where users' EEG actually leaves the device. Federated
+learning inverts the data-flow: each user trains locally on their own
+device, the server only sees model updates.
 
 This victim implements the canonical "FedAvg with central DP" protocol
 (Geyer et al. 2017; McMahan et al. 2017): each round samples a random
@@ -62,12 +61,11 @@ class FederatedDPVictim(VictimModel):
     bound), and after R rounds the total budget at the client level
     is roughly (ε, δ) with σ chosen by the analytic moments accountant.
 
-    For the milestone version we expose the (ε, δ) BOUND as an
-    annotation rather than an enforced budget — production-grade
-    accounting would plug an RDP accountant in. The simulation faithfully
-    implements the noise mechanism; the bound on the writeup side is
-    derived from `noise_sigma`, `clip_norm`, `n_rounds`, and the
-    participant fraction.
+    The (ε, δ) BOUND is exposed as an annotation rather than an
+    enforced budget — production-grade accounting would plug an RDP
+    accountant in. The simulation faithfully implements the noise
+    mechanism; the bound is derived from `noise_sigma`, `clip_norm`,
+    `n_rounds`, and the participant fraction.
     """
     name = "eegnet_federated_dp"
 

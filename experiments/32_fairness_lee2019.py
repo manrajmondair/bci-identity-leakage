@@ -1,4 +1,4 @@
-"""W5.1 extension — fairness analysis on Lee 2019 OpenBMI.
+"""Fairness analysis on Lee 2019 OpenBMI.
 
 Two analyses run unconditionally:
 
@@ -7,7 +7,8 @@ Two analyses run unconditionally:
       (most-leaked minus least-leaked decile), inter-quartile range,
       and the Mann-Whitney U on the upper-half vs lower-half subject
       split. These metrics do NOT require demographic metadata and
-      are the within-cohort heterogeneity counterpart of milestone §3.6.
+      are the within-cohort heterogeneity counterpart of the
+      PhysioNet subgroup fairness analysis.
 
   (2) Demographic stratification (sex, age, handedness) IF the user
       has populated `data/external/lee2019_demographics.tsv` from a

@@ -1,9 +1,8 @@
 """Ad-hoc privacy transformations applied to the raw EEG channel dimension.
 
-These are the defenses the original project proposal listed: PCA channel
-compression, additive Gaussian noise on channels, and channel-subset
-reduction. We keep them as defense baselines against the more principled
-DANN and DP-SGD methods that come later.
+PCA channel compression, additive Gaussian noise on channels, and
+channel-subset reduction. They serve as defense baselines against the
+more principled DANN and DP-SGD methods.
 
 All transforms operate on the raw windowed EEG (n_windows, n_channels,
 n_times). Defender fits the transform on training data, applies it to

@@ -1,4 +1,4 @@
-"""M3CV (Wang et al. 2022) loader stub.
+"""M3CV (Wang et al. 2022) optional-corpus loader.
 
 The M3CV biometrics challenge dataset (NeuroImage 264:119666) is a
 multi-subject, multi-session, multi-task EEG biometric corpus designed
@@ -7,15 +7,13 @@ several recording sessions per subject, six distinct paradigms.
 
 The primary distribution is on Science Data Bank
 (https://www.scidb.cn/en/detail?dataSetId=778773169668231168) which
-hosts the original .npz / .mat archive. We host a thin loader here so
-that, if and when the user mirrors the corpus into Drive
-(/content/drive/MyDrive/bci_cache/m3cv/...), the rest of the project can
-treat it as just another second-corpus alongside Lee 2019 and IV-2a.
+hosts the original .npz / .mat archive. This module exposes a thin
+loader so that, when the corpus is mirrored into the cache path under
+`BCI_M3CV_CACHE`, the rest of the codebase can consume it as a
+second-corpus alongside Lee 2019 and IV-2a.
 
-The current state is a contract spec: shapes, channel names, label
-conventions documented below. As soon as a cached `<root>/m3cv/...`
-tree exists with the expected layout, `load_subject_session_compact` is
-the entry point the experiments use.
+The expected on-disk layout is documented below; `load_subject_session_compact`
+is the entry point used by experiments when the cache is present.
 
 Expected on-disk layout (after mirroring):
 

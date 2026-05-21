@@ -1,6 +1,6 @@
 # OpenNeuro ds004362 → PhysioNet S001-S109 mapping verification
 
-The subgroup-fairness experiments (W5.1; experiments/12, 17, 22) rely on
+The subgroup-fairness experiments (experiments/12, 17, 22) rely on
 demographic metadata (Gender, Age, Handedness) sourced from OpenNeuro
 [ds004362](https://openneuro.org/datasets/ds004362), a BIDS conversion of
 PhysioNet's EEGMMIDB. The mapping assumed by the project — `sub-{S:03d}`

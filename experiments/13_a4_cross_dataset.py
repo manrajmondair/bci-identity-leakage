@@ -9,8 +9,7 @@ recording rig + country + cognitive-task class set).
 
 If AUC stays substantially above 0.5, the biometric claim transcends the
 specific dataset: it is a property of EEG itself, not a PhysioNet
-artifact. This is the strongest single test of the project's central
-claim.
+artifact. This is the strongest single test of the central claim.
 
 Reports ROC-AUC, EER on (X_test, subj_test) pairs sampled balanced
 same vs different.

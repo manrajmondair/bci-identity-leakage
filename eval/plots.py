@@ -560,7 +560,7 @@ def verification_summary_card(
 
 
 def closed_set_table(results: list[dict]) -> str:
-    """Render the same JSON as a markdown table -- used in milestone draft."""
+    """Render the closed-set JSON as a markdown table."""
     lines = [
         "| Victim | Probe | Top-1 (95% CI) | Top-5 | Top-10 | Task acc | Chance top-1 |",
         "|---|---|---|---|---|---|---|",

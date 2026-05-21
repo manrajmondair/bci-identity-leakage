@@ -13,7 +13,7 @@ Riemannian tangent-space), attack code, and the audit / regen tooling.
    Each notebook is self-contained.
 2. **Set runtime to L4 GPU** (the default for almost everything), or
    **A100** for the three big sweeps: `D3_eps_sweep`,
-   `D3_membership_aware_eps_sweep`, and `Tier1_multi_seed`. The
+   `D3_membership_aware_eps_sweep`, and `Multi_seed`. The
    per-notebook headers state the recommended runtime explicitly.
 3. **Mount Drive when the notebook asks for it.** Lee 2019 experiments
    read a 4 GB compact float16 cache produced by
@@ -44,7 +44,7 @@ is a 200+ line diff against the canonical source for nothing. Just run
 the cells; the paste-back block at the bottom returns everything that
 needs to be committed.
 
-## Notebook index — milestone-era (experiments 01–22)
+## Notebook index — core experiments (01–22)
 
 ### Attacks on PhysioNet
 
@@ -83,7 +83,7 @@ needs to be committed.
 | `SF_eegnet.ipynb` | `experiments.17_subgroup_fairness_eegnet` (single seed) | ~30 min |
 | `SF_eegnet_seeds.ipynb` | `experiments.22_eegnet_age_seeds` (5 seeds) | ~50 min |
 
-## Notebook index — Tier 1 + Tier 2 extensions (experiments 20, 24–34)
+## Notebook index — second-corpus and extension experiments (20, 24–34)
 
 ### Lee 2019 OpenBMI second-corpus replication
 
@@ -117,7 +117,7 @@ needs to be committed.
 | Notebook | Purpose | Hardware | Wall |
 |---|---|---|---|
 | `theory_scaling.ipynb` | Closed-set re-ID accuracy vs cohort size N for EEGNet and Riemann; γ scaling fit; Yeom (ε, δ)-bound overlay against the ε sweep. | L4 | ~60 min |
-| `Tier1_multi_seed.ipynb` | 5-seed sweep over experiments 20, 24, and all four directions of 26; aggregates mean/std per metric. | A100 (or L4 across sessions) | 5–7 h |
+| `Multi_seed.ipynb` | 5-seed sweep over experiments 20, 24, and all four directions of 26; aggregates mean/std per metric. | A100 (or L4 across sessions) | 5–7 h |
 
 ## Hardware notes
 
@@ -127,9 +127,8 @@ needs to be committed.
   A100.
 - **A100 for the four big sweeps.** `D3_eps_sweep` (five DP-SGD
   trainings), `D3_membership_aware*` (eight shadow DP-SGD trainings),
-  and `Tier1_multi_seed` (nine experiment runs × five seeds each)
-  see ~2× wall-clock speedup on A100. The other notebooks do not
-  benefit.
+  and `Multi_seed` (nine experiment runs × five seeds each) see ~2×
+  wall-clock speedup on A100. The other notebooks do not benefit.
 - **Disk.** PhysioNet imagery cache is 1.7 GB on local Colab disk;
   Lee 2019 raw .mat files are 600 MB per (subject, session) but the
   prefetcher deletes them as it goes, so peak local-disk usage stays

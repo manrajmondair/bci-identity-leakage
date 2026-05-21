@@ -378,10 +378,10 @@ def check_result_files(audit: Audit) -> dict:
 
 
 # -----------------------------------------------------------------------------
-# 6. Tier 1 + Tier 2 result-file invariants
+# 6. Extension experiment invariants
 #
 # Covers experiments 20, 24-33. Each block enforces the same minimum quality
-# bar as the milestone-era JSONs: shape correctness, CI brackets the point,
+# bar as the original JSONs: shape correctness, CI brackets the point,
 # parameters within plausible ranges, and protocol-specific sanity (e.g.
 # Lee 2019 cross-session lift over chance, DP final epsilon close to target).
 # -----------------------------------------------------------------------------
@@ -401,8 +401,8 @@ def _in_unit_interval(audit: "Audit", name: str, value, *, allow_close: bool = T
                  f"value={value}")
 
 
-def check_tier_1_2_results(audit: "Audit") -> None:
-    print("\n## 7. TIER 1 + 2 RESULT INVARIANTS", flush=True)
+def check_extension_results(audit: "Audit") -> None:
+    print("\n## 7. EXTENSION RESULT INVARIANTS", flush=True)
 
     # ---- experiment 20: Lee 2019 cross-session re-ID -------------------
     p = RESULTS_DIR / "20_a3_lee2019.json"
@@ -618,10 +618,10 @@ def check_tier_1_2_results(audit: "Audit") -> None:
                      f"hypothesis_supported={d.get('hypothesis_supported')}")
 
     # ---- experiment 34: multi-seed sweep ------------------------------
-    p = RESULTS_DIR / "34_tier1_multi_seed.json"
+    p = RESULTS_DIR / "34_multi_seed.json"
     if p.exists():
         d = json.loads(p.read_text())
-        label = "34_tier1_multi_seed"
+        label = "34_multi_seed"
         for t, t_data in d["rows"].items():
             for name, agg in t_data["aggregated"].items():
                 audit.expect(f"{label}[{t}] {name} has 3+ seeds",
@@ -685,7 +685,7 @@ def main() -> None:
     check_negative_control(audit)
     files = check_result_files(audit)
     check_effect_sizes(audit)
-    check_tier_1_2_results(audit)
+    check_extension_results(audit)
 
     n_ok = sum(1 for e in audit.entries if e["status"] == _OK)
     n_warn = sum(1 for e in audit.entries if e["status"] == _WARN)

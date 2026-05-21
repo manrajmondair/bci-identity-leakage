@@ -1,10 +1,10 @@
-"""Tier-1 multi-seed replication for the headline new results.
+"""Multi-seed replication for the second-corpus and cross-dataset results.
 
-The milestone-time A4 PhysioNet result had a 5-seed extension
-(experiment 14, AUC = 0.934 +/- 0.020). The Tier 1+2 headline numbers
-were all reported at seed 0. This script re-runs the load-bearing ones
-across 5 seeds and reports mean +/- std across seeds in addition to
-the per-seed bootstrap CIs.
+The A4 PhysioNet result had a 5-seed extension (experiment 14,
+AUC = 0.934 +/- 0.020). The second-corpus and cross-dataset headline
+numbers were reported at seed 0. This script re-runs the load-bearing
+ones across 5 seeds and reports mean +/- std across seeds in addition
+to the per-seed bootstrap CIs.
 
 Covered:
     A3 Lee 2019 cross-session re-ID (experiment 20)
@@ -16,9 +16,9 @@ are aggregated here per-run and written as a single multi-seed JSON.
 
 Usage
 -----
-    python -m experiments.34_tier1_multi_seed --quick   # 3 seeds, all targets
-    python -m experiments.34_tier1_multi_seed --full    # 5 seeds, all targets
-    python -m experiments.34_tier1_multi_seed --quick --target a4_lee2019
+    python -m experiments.34_multi_seed --quick   # 3 seeds, all targets
+    python -m experiments.34_multi_seed --full    # 5 seeds, all targets
+    python -m experiments.34_multi_seed --quick --target a4_lee2019
 """
 from __future__ import annotations
 
@@ -146,7 +146,7 @@ def main() -> None:
                              "values": vals}
         summary["rows"][t] = {"rows": rows, "aggregated": agg}
 
-    out_path = Path(RESULTS_DIR) / "34_tier1_multi_seed.json"
+    out_path = Path(RESULTS_DIR) / "34_multi_seed.json"
     out_path.write_text(json.dumps(summary, indent=2))
     print(f"\nResults written to {out_path}")
 

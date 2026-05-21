@@ -1,4 +1,4 @@
-"""Project-wide constants. Imported by everything; no heavy deps."""
+"""Project-wide constants imported by every module. No heavy deps."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent

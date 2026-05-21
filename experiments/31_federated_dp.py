@@ -15,8 +15,8 @@ protection materially?
 
 The deployment story this experiment proves out: a federated BCI
 service where raw EEG never leaves the user device is the cleanest
-defense story for §1.1 of the milestone — and we want to know
-whether it actually delivers privacy under the same attack suite.
+defense for the threat model — and we want to know whether it actually
+delivers privacy under the same attack suite.
 
 Usage
 -----

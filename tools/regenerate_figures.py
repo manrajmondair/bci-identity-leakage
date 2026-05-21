@@ -246,7 +246,7 @@ def render_lee2019_a4() -> None:
     # Pull per-seed AUCs from experiment 34 when available so the
     # within-session variant gets a strip-plot overlay alongside the
     # seed-0 bar.
-    multi_seed_path = RESULTS_DIR / "34_tier1_multi_seed.json"
+    multi_seed_path = RESULTS_DIR / "34_multi_seed.json"
     a4_seeds = None
     a4_mean = None
     a4_std = None
@@ -385,8 +385,8 @@ def render_lee2019_a5() -> None:
 
 
 def render_a5_classical() -> None:
-    """Comparison across victim families for the milestone-era classical
-    MI experiment. One bar per victim with CI."""
+    """Comparison across victim families for the classical MI experiment.
+    One bar per victim with CI."""
     rows = []
     for vf, fname in (("EEGNet", "08_a5_membership_inference.json"),
                        ("FBCSP+LDA", "16_a5_fbcsp_mi.json"),
@@ -589,7 +589,7 @@ def render_d3() -> None:
     ax_r.legend(loc="lower right", fontsize=7.5)
     _maybe_grid(ax_r, "y")
 
-    fig.suptitle("D3 DP-SGD ε sweep, milestone-era three-point grid",
+    fig.suptitle("D3 DP-SGD ε sweep, three-point grid",
                  fontsize=10.5)
     fig.savefig(FIGURES_DIR / "10_d3_dp_sgd.pdf")
     plt.close(fig)
@@ -686,8 +686,7 @@ def render_pareto() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Milestone extension batch (cross-dataset, multi-seed, adaptive, MI on
-# classical victims, EEGNet fairness)
+# Cross-dataset, multi-seed, adaptive, MI on classical victims, EEGNet fairness
 # ---------------------------------------------------------------------------
 def render_a4_cross_dataset() -> None:
     p = RESULTS_DIR / "13_a4_cross_dataset.json"
@@ -717,12 +716,12 @@ def render_a4_cross_dataset() -> None:
     ax.axvline(0.5, color=PALETTE["neutral"], lw=0.9, ls=(0, (4, 3)),
                label="chance (AUC = 0.5)")
     ax.set_yticks([0])
-    ax.set_yticklabels(["PhysioNet → IV-2a\n(milestone)"])
+    ax.set_yticklabels(["PhysioNet → IV-2a"])
     ax.set_ylim(-0.55, 0.55)
     ax.set_xlim(0.45, 1.005)
     ax.set_xlabel("A4 AUC (open-set verification)")
     ax.set_title(
-        "A4 cross-dataset verification (PhysioNet → IV-2a, milestone)\n"
+        "A4 cross-dataset verification (PhysioNet → IV-2a)\n"
         f"train n=80 PhysioNet · unseen n=9 IV-2a · EER = {d['eer']:.3f}",
         fontsize=10.0,
     )
@@ -926,17 +925,16 @@ def render_dp_sgd_arch_ablation() -> None:
 
       1. AdamW + BatchNorm baseline = the A1 EEGNet logreg result
          (results/02_closed_set_reid.json, hard-coded as 0.411 here
-         to match the milestone-era number).
-      2. SGD + GroupNorm, no DP -- the milestone's experiment 19, which
-         retrains the architecture-equivalent Opacus stack with the
-         PrivacyEngine bypassed (target_epsilon = None).
-      3. SGD + GroupNorm + DP-SGD ε = 3 -- the milestone's
-         experiment 10 ε=3 logreg row (results/10_d3_dp_sgd.json).
+         to match the canonical number).
+      2. SGD + GroupNorm, no DP -- experiment 19, which retrains the
+         architecture-equivalent Opacus stack with the PrivacyEngine
+         bypassed (target_epsilon = None).
+      3. SGD + GroupNorm + DP-SGD ε = 3 -- experiment 10's ε=3 logreg
+         row (results/10_d3_dp_sgd.json).
 
-    Plotting all three side by side surfaces the milestone finding that
-    the architectural change (BN→GN, AdamW→SGD) accounts for ~89% of
-    the empirical privacy and the formal DP mechanism adds only ~5% on
-    top.
+    Plotting all three side by side surfaces the result that the
+    architectural change (BN→GN, AdamW→SGD) accounts for ~89% of the
+    empirical privacy and the formal DP mechanism adds only ~5% on top.
     """
     p19 = RESULTS_DIR / "19_dp_sgd_arch_ablation.json"
     p10 = RESULTS_DIR / "10_d3_dp_sgd.json"
@@ -1094,7 +1092,7 @@ def render_subgroup_fairness() -> None:
     axes[1].legend(loc="lower left", fontsize=7.5)
     _maybe_grid(axes[1], "y")
 
-    fig.suptitle("W5.1 subgroup fairness (PhysioNet, n=97 sex-known / 91 age-known)",
+    fig.suptitle("Subgroup fairness (PhysioNet, n=97 sex-known / 91 age-known)",
                  fontsize=10.5)
     fig.savefig(FIGURES_DIR / "12_subgroup_fairness.pdf")
     plt.close(fig)
@@ -1199,7 +1197,7 @@ def render_eegnet_age_seeds() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tier 1 + Tier 2 renderers
+# Second-corpus and extension renderers
 # ---------------------------------------------------------------------------
 def render_xds_symmetric() -> None:
     directions = [
@@ -1219,7 +1217,7 @@ def render_xds_symmetric() -> None:
     p13 = RESULTS_DIR / "13_a4_cross_dataset.json"
     if p13.exists():
         d = json.loads(p13.read_text())
-        rows.append(("PhysioNet → IV-2a (milestone)",
+        rows.append(("PhysioNet → IV-2a",
                      d["auc"], d["auc_ci_low"], d["auc_ci_high"], 80, 9))
     if not rows:
         return
@@ -1256,7 +1254,7 @@ def render_xds_symmetric() -> None:
     ax.tick_params(axis="y", which="major", labelsize=8.5)
     ax.set_xlabel("A4 AUC (open-set verification on unseen subjects)")
     ax.set_xlim(0.43, 1.0)
-    ax.set_title("A4 cross-dataset transfer in four directions plus milestone")
+    ax.set_title("A4 cross-dataset transfer in five directions")
     ax.legend(loc="lower right", fontsize=7.5)
     _maybe_grid(ax, "x")
     fig.savefig(FIGURES_DIR / "26_a4_xds_symmetric.pdf")
@@ -1684,7 +1682,7 @@ def render_asymmetry_mechanism() -> None:
     d = json.loads(p.read_text())
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
-    labels = ["binary L/R-hand\n(milestone)", "synthetic 4-class\n(hand × half-trial)"]
+    labels = ["binary L/R-hand\n(baseline)", "synthetic 4-class\n(hand × half-trial)"]
     values = np.array([d["binary_baseline_auc"], d["auc"]])
     err_lo = np.array([0, d["auc"] - d["auc_ci_low"]])
     err_hi = np.array([0, d["auc_ci_high"] - d["auc"]])
@@ -1721,7 +1719,7 @@ def render_asymmetry_mechanism() -> None:
 
 
 def render_multi_seed() -> None:
-    p = RESULTS_DIR / "34_tier1_multi_seed.json"
+    p = RESULTS_DIR / "34_multi_seed.json"
     if not p.exists():
         return
     d = json.loads(p.read_text())
@@ -1780,13 +1778,13 @@ def render_multi_seed() -> None:
     ax.set_xlabel("metric value  (mean ± std across 5 seeds)")
     ax.set_xlim(0, max(1.0, (means + stds).max() + 0.08))
     ax.set_title(
-        "Tier-1 multi-seed replication (5 seeds per row, experiment 34)"
+        "Multi-seed replication (5 seeds per row, experiment 34)"
     )
     ax.legend(loc="lower right", fontsize=7.5)
     _maybe_grid(ax, "x")
-    fig.savefig(FIGURES_DIR / "34_tier1_multi_seed.pdf")
+    fig.savefig(FIGURES_DIR / "34_multi_seed.pdf")
     plt.close(fig)
-    print("regenerated figures/34_tier1_multi_seed.pdf")
+    print("regenerated figures/34_multi_seed.pdf")
 
 
 # ---------------------------------------------------------------------------
@@ -1795,7 +1793,7 @@ def render_multi_seed() -> None:
 def main() -> None:
     print("Regenerating all figures from result JSONs ...\n")
     for fn in (
-        # Milestone-era
+        # Core experiments
         render_a1, render_within_subject_reid,
         render_a2, render_a3, render_a4, render_a5,
         render_d1_pca,
@@ -1813,7 +1811,7 @@ def main() -> None:
         render_eegnet_age_seeds,
         render_d1_adaptive_attacker,
         render_a2_vs_rest,
-        # Tier 1 + Tier 2
+        # Second-corpus and extensions
         render_lee2019_a3,
         render_lee2019_a4,
         render_lee2019_a5,

@@ -19,8 +19,8 @@ noise, infinite ε. We then run A1 closed-set re-ID on its embeddings.
 If A1 top-1 here is close to the DP-SGD ε=3 number (~2%), the privacy
 came from the architecture; if it's close to the AdamW BatchNorm A1
 baseline (~41%), the privacy came from the noise. The truth is almost
-certainly between, and the breakdown matters for how we frame D3 in the
-report.
+certainly between, and the breakdown determines the contribution of
+the formal DP mechanism on top of the architectural change.
 
 Outputs:
   results/19_dp_sgd_arch_ablation.json  — A1 top-1 / task acc for the

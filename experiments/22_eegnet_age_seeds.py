@@ -1,4 +1,4 @@
-"""W5.1 EEGNet age-effect replication across seeds.
+"""EEGNet age-effect replication across seeds.
 
 Experiment 17 reported a Mann-Whitney p=0.044 for "EEGNet attack accuracy
 in the youngest age tertile vs the oldest age tertile" on a single

@@ -7,10 +7,9 @@ records the company kept). The adversary wants to predict which of the
 N enrolled subjects produced a new EEG window.
 
 This is a closed-set 1-of-N classification problem. It is the weakest of
-our five attacks (the others test cross-task, cross-session, open-set
-verification on unseen subjects, and membership inference), and it
-mirrors what the original project proposal asked for. We keep it as a
-baseline so the privacy-utility plots have a familiar reference column.
+the five attacks (the others test cross-task, cross-session, open-set
+verification on unseen subjects, and membership inference); it remains
+as the reference column on the privacy-utility plots.
 
 Pipeline
 --------

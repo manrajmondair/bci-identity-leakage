@@ -1,4 +1,4 @@
-"""W5.1 — subgroup fairness analysis (demographic + within-cohort heterogeneity).
+"""Subgroup fairness analysis (demographic + within-cohort heterogeneity).
 
 PhysioNet's EDFs are scrubbed (`his_id: X, sex: 0` everywhere). The OpenNeuro
 BIDS conversion of the same source data (ds004362) re-publishes a
@@ -9,7 +9,7 @@ we run our experiments on.
 
 We do TWO complementary analyses:
 
-  1. Demographic stratification (the original W5.1 plan).
+  1. Demographic stratification.
      A1 attack accuracy by sex (M vs F) and by age tertile (low / mid / high
      cutoffs computed within our cohort). Bootstrap CIs on group means,
      bootstrap CIs on group differences, and Mann-Whitney U on the per-

@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software or the accompanying paper, please cite it as below."
+title: "Subject Re-Identification Leakage in Motor-Imagery BCI Models"
+authors:
+  - family-names: Mondair
+    given-names: Manraj Singh
+year: 2026
+url: "https://github.com/manrajmondair/bci-identity-leakage"
+license: MIT
+type: software

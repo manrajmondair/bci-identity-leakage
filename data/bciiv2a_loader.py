@@ -2,9 +2,9 @@
 
 This dataset has 9 subjects each recorded across **two sessions on different
 days** (training session 'T', evaluation session 'E'), 22 EEG channels at
-250 Hz. It's the only commonly-used motor-imagery dataset that gives us a
-true cross-session split — required for the realistic biometric-linkage
-attack (A3 in the project plan).
+250 Hz. It is the only commonly-used motor-imagery dataset that supplies
+a true cross-session split — required for the realistic
+biometric-linkage attack (A3).
 
 We expose it through moabb.datasets.BNCI2014_001, which wraps the official
 BNCI Horizon 2020 distribution. moabb caches the raw files in

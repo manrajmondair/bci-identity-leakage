@@ -1,9 +1,9 @@
 """Theory validation — re-ID accuracy scaling with cohort size N and ε.
 
-Validates the two theoretical anchors documented in `docs/theory.md`:
+Validates two theoretical anchors:
 
     (1) closed-set re-ID top-1 ~ 1 - C * N^(1 - γ) for embedder φ;
-        fit γ from cohort-size sweep and check it matches the
+        fit γ from a cohort-size sweep and check it matches the
         same-vs-different similarity-distribution structure measured
         directly in φ's output.
 

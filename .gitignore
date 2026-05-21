@@ -26,15 +26,13 @@ cache/
 wandb/
 mlruns/
 
-# Outputs — JSON results and PDF figures are small and report-bound, so
-# we keep them. Raster images and large numpy dumps are regenerable and
-# gitignored.
+# Outputs — JSON results and PDF figures are tracked; raster images and
+# large numpy dumps are regenerable and ignored.
 figures/*.png
 figures/*.jpg
 figures/*.svg
 results/*.npz
 *.csv
-!report/**/*.csv
 
 # Jupyter
 .ipynb_checkpoints/
@@ -46,14 +44,3 @@ results/*.npz
 .vscode/
 *.swp
 *.swo
-
-# LaTeX build artifacts
-report/**/*.aux
-report/**/*.log
-report/**/*.out
-report/**/*.bbl
-report/**/*.blg
-report/**/*.synctex.gz
-report/**/*.toc
-report/**/*.fls
-report/**/*.fdb_latexmk

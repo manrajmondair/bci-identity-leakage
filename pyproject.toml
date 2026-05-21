@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bci-identity-leakage"
-version = "0.1.0"
-description = "EEG-as-Biometric: Cross-Session Identity Leakage in BCI Models (CS 281 Spring 2026)"
+version = "1.0.0"
+description = "Subject Re-Identification Leakage in Motor-Imagery BCI Models"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 authors = [{ name = "Manraj Singh Mondair" }]

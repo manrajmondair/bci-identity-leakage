@@ -1,4 +1,4 @@
-"""W5.1 subgroup fairness on EEGNet — completes the demographic table.
+"""Subgroup fairness on EEGNet — completes the demographic table.
 
 The local-Mac fairness tool covers FBCSP+LDA and Riemann tangent-space.
 EEGNet needs a GPU pass (80 epochs cross-subject training), so we ship
@@ -12,8 +12,8 @@ Same protocol as `tools/subgroup_fairness.py`:
   4. Per-subject heterogeneity (decile gap, distribution stats).
 
 Output: results/17_subgroup_fairness_eegnet.json — same schema as
-results/12_subgroup_fairness.json so the report can be compared head-to-
-head with the classical pipelines.
+results/12_subgroup_fairness.json so it can be compared head-to-head
+with the classical pipelines.
 """
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 # `runs/` — execution provenance
 
-One subdirectory per experiment run, named with a sortable timestamp + experiment tag + git short SHA. Each contains a small `meta.json` capturing what was run, on what hardware, against which commit, and when. Treated as the audit trail for the experimental claims in the report.
+One subdirectory per experiment run, named with a sortable timestamp + experiment tag + git short SHA. Each contains a small `meta.json` capturing what was run, on what hardware, against which commit, and when. Treated as the audit trail for every claim made from `results/`.
 
 ```
 runs/
@@ -27,6 +27,6 @@ runs/
 }
 ```
 
-Notebooks under `colab/` write this file at the end of every run; the result JSON and meta JSON are committed to canonical paths so any number in the milestone or final report can be traced to a specific commit + hardware + timestamp.
+Notebooks under `colab/` write this file at the end of every run; the result JSON and meta JSON are committed to canonical paths so every reported number traces back to a specific commit + hardware + timestamp.
 
-The audit history is persisted under `runs/` as `<timestamp>_audit_<sha>/audit.{md,json}` — one subdirectory per `python -m tools.audit` invocation. The latest audit on the canonical commit returns **240 OK / 0 WARN / 0 FAIL** across the milestone-era experiments (01–22) plus the Tier 1 + Tier 2 extensions (20, 24–34).
+The audit history is persisted under `runs/` as `<timestamp>_audit_<sha>/audit.{md,json}` — one subdirectory per `python -m tools.audit` invocation. The latest audit returns **240 OK / 0 WARN / 0 FAIL**.
