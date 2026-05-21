@@ -441,75 +441,104 @@ def verification_summary_card(
     seed_mean: float | None = None,
     seed_std: float | None = None,
 ) -> None:
-    """Forest-plot rendering of an AUC measurement, optionally augmented
-    with per-seed dots from a multi-seed extension.
-
-    AUC is a position on a [0, 1] scale, not a quantity that grows from
-    zero, so the seed-0 measurement is drawn as a single point with a
-    vertical bootstrap-CI bracket — never as a bar climbing out of the
-    axis. When `extra_seeds` is supplied, those per-seed AUCs appear as
-    a small strip-plot at x=1 with a horizontal mean rule; both columns
-    share the same point encoding so the visual comparison is honest.
+    """Horizontal forest plot of an AUC measurement plus per-seed
+    replications. One row per seed; the seed-0 measurement carries its
+    bootstrap CI as a horizontal whisker; the multi-seed extension
+    contributes one row per replicate. A vertical mean rule and a
+    shaded ±std band summarise the multi-seed cluster; a chance
+    reference line on the far left anchors the AUC scale.
     """
     plt.rcParams.update(journal_style())
-    fig, ax = plt.subplots(figsize=FIG_DOUBLE)
 
-    err_hi = auc_ci_high - auc
     err_lo = auc - auc_ci_low
+    err_hi = auc_ci_high - auc
 
-    # Seed-0 measurement: forest-plot point with CI whiskers.
-    ax.errorbar([0], [auc], yerr=[[err_lo], [err_hi]],
+    has_multi = extra_seeds is not None and len(extra_seeds) > 0
+    seeds_arr = (np.asarray(extra_seeds, dtype=float)
+                 if has_multi else np.array([]))
+    n_rows = 1 + (len(seeds_arr) if has_multi else 0)
+
+    # Vertical size scales with row count. Single-row cards get a
+    # taller-than-needed canvas so the title, axis label and legend
+    # don't crash into each other when there's only one dot to show.
+    height = (3.0 if n_rows == 1
+              else 2.6 + 0.35 * max(0, n_rows - 1))
+    fig, ax = plt.subplots(figsize=(FIG_DOUBLE[0], height))
+
+    # Row layout: seed 0 sits at the TOP (y=n_rows-1) so the eye reads
+    # top-to-bottom from headline measurement → replications. The
+    # replicates appear in input order beneath: replicate 1 just below
+    # the headline, replicate N at the bottom of the panel.
+    seed0_y = n_rows - 1
+    multi_ys = (np.arange(len(seeds_arr) - 1, -1, -1)
+                if has_multi else np.array([], dtype=int))
+
+    # Decide x range: tight around the data with chance pulled into view
+    # as a left-edge reference; this keeps the dots away from the spines
+    # and yields a high data-ink ratio for AUCs that cluster well above
+    # chance.
+    data_lo = min([auc - err_lo] +
+                  ([float(seeds_arr.min())] if has_multi else []))
+    data_hi = max([auc + err_hi] +
+                  ([float(seeds_arr.max())] if has_multi else []))
+    span = max(0.06, data_hi - data_lo)
+    x_lo = min(chance - 0.02, data_lo - 0.30 * span)
+    x_hi = min(1.005, data_hi + 0.40 * span)
+
+    # Multi-seed mean ± std shown as a thin vertical band + rule.
+    if has_multi:
+        smean = (seed_mean if seed_mean is not None
+                 else float(seeds_arr.mean()))
+        sstd = (seed_std if seed_std is not None
+                else float(seeds_arr.std(ddof=1)))
+        ax.axvspan(smean - sstd, smean + sstd,
+                   color=PALETTE["warn"], alpha=0.14, zorder=1,
+                   label=f"multi-seed mean ± std  ({smean:.3f} ± {sstd:.3f})")
+        ax.axvline(smean, color=PALETTE["contrast"], lw=1.2,
+                   ls=(0, (5, 2)), zorder=2)
+
+        # Per-seed rows: dots with the AUC label to their right.
+        for y_pos, seed_val in zip(multi_ys, seeds_arr):
+            ax.plot([seed_val], [y_pos], "o",
+                    color=PALETTE["contrast"],
+                    markerfacecolor=PALETTE["contrast"],
+                    markeredgecolor=PALETTE["ink"], markeredgewidth=0.7,
+                    markersize=6.5, zorder=3)
+            ax.text(min(x_hi - 0.005, seed_val + 0.008), y_pos,
+                    f"{seed_val:.3f}",
+                    va="center", ha="left", fontsize=7.5,
+                    color=PALETTE["ink"])
+
+    # Seed-0 row with bootstrap CI whisker.
+    ax.errorbar([auc], [seed0_y], xerr=[[err_lo], [err_hi]],
                 fmt="o", color=PALETTE["accent"],
                 ecolor=PALETTE["ink"], elinewidth=1.0,
                 capsize=4.5, capthick=1.0,
-                markersize=9.0, markerfacecolor=PALETTE["accent"],
+                markersize=8.5,
+                markerfacecolor=PALETTE["accent"],
                 markeredgecolor=PALETTE["ink"], markeredgewidth=0.9,
-                zorder=4, label="seed-0 measurement (95% CI)")
-
-    xticks = [0]
-    xticklabels = ["seed 0"]
-
-    has_multi = extra_seeds is not None and len(extra_seeds) > 0
-    if has_multi:
-        seeds_arr = np.asarray(extra_seeds, dtype=float)
-        rng = np.random.default_rng(0)
-        jit = rng.uniform(-0.08, 0.08, size=len(seeds_arr))
-        ax.scatter(np.ones_like(seeds_arr) + jit, seeds_arr,
-                   color=PALETTE["contrast"], edgecolor=PALETTE["ink"],
-                   linewidth=0.6, s=42, zorder=3,
-                   label=f"per-seed (n={len(seeds_arr)})")
-        smean = seed_mean if seed_mean is not None else float(seeds_arr.mean())
-        sstd = seed_std if seed_std is not None else float(seeds_arr.std(ddof=1))
-        ax.hlines(smean, 0.78, 1.22, color=PALETTE["ink"],
-                  lw=1.4, zorder=4,
-                  label=f"multi-seed mean {smean:.3f} ± {sstd:.3f}")
-        xticks.append(1)
-        xticklabels.append("multi-seed")
-
-    ax.axhline(chance, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
-               label=f"chance ({chance:.3f})")
-    ax.set_xticks(xticks)
-    ax.set_xticklabels(xticklabels)
-    ax.set_xlim(-0.55, 1.55 if has_multi else 0.55)
-
-    # Y-limits: keep chance inside the box and leave headroom for the
-    # bold AUC numeral above the upper CI cap.
-    top_data = max(auc + err_hi, max(extra_seeds) if has_multi else auc + err_hi)
-    bottom = min(chance - 0.06, auc_ci_low - 0.06)
-    ax.set_ylim(bottom, max(top_data + 0.16, 1.02))
-    ax.set_ylabel("AUC")
-
-    # Value annotation: bold AUC numeral above the seed-0 CI cap with the
-    # bracket text tucked between it and the cap. The point encoding
-    # leaves room for the label without inflating the data ink.
-    ci_y = auc + err_hi + 0.028
-    value_y = ci_y + 0.065
-    ax.text(0, value_y, f"{auc:.3f}",
-            ha="center", va="bottom", fontsize=11.0,
+                zorder=5)
+    ci_text = f"  {auc:.3f}  [{auc_ci_low:.3f}, {auc_ci_high:.3f}]"
+    ax.text(min(x_hi - 0.003, auc + err_hi + 0.006), seed0_y, ci_text,
+            va="center", ha="left", fontsize=8.5,
             fontweight="bold", color=PALETTE["ink"])
-    ax.text(0, ci_y, f"[{auc_ci_low:.3f}, {auc_ci_high:.3f}]",
-            ha="center", va="bottom", fontsize=7.0,
-            color=PALETTE["neutral"])
+
+    # Chance reference at the far left of the AUC axis.
+    ax.axvline(chance, color=PALETTE["neutral"], lw=0.9,
+               ls=(0, (4, 3)),
+               label=f"chance ({chance:.3f})")
+
+    # Row labels (use "replicate i" because the seed-extension JSONs
+    # don't carry seed numbers in this code path — these are independent
+    # 80/24 random splits, not the literal seeds 1..N).
+    yticks = list(multi_ys) + [seed0_y]
+    yticklabels = ([f"replicate {i + 1}" for i in range(len(seeds_arr))]
+                   if has_multi else []) + ["seed 0\n(headline)"]
+    ax.set_yticks(yticks)
+    ax.set_yticklabels(yticklabels)
+    ax.set_ylim(-0.55, n_rows - 0.45)
+    ax.set_xlim(x_lo, x_hi)
+    ax.set_xlabel("AUC")
 
     # Title carries the full cohort line so the subtitle never duplicates
     # the "X unseen subjects" string from the calling renderer.
@@ -520,10 +549,10 @@ def verification_summary_card(
             f"{n_pairs:,} pairs · EER = {eer:.3f}",
             fontsize=10.0,
         )
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18),
-              fontsize=7.5, ncol=4, frameon=False,
-              columnspacing=1.4, handletextpad=0.6)
-    ax.grid(axis="y", which="major", linestyle=":", linewidth=0.4,
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16),
+              fontsize=7.5, ncol=2, frameon=False,
+              columnspacing=1.6, handletextpad=0.6)
+    ax.grid(axis="x", which="major", linestyle=":", linewidth=0.4,
             alpha=0.35, color=PALETTE["muted"])
     ax.set_axisbelow(True)
     fig.savefig(out_path)

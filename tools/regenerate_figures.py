@@ -695,40 +695,40 @@ def render_a4_cross_dataset() -> None:
         return
     d = json.loads(p.read_text())
     plt.rcParams.update(journal_style())
-    fig, ax = plt.subplots(figsize=FIG_DOUBLE)
+    fig, ax = plt.subplots(figsize=(FIG_DOUBLE[0], 3.0))
     err_lo = d["auc"] - d["auc_ci_low"]
     err_hi = d["auc_ci_high"] - d["auc"]
-    # Forest-plot point with CI whiskers; AUC is a position on a [0, 1]
-    # scale, not a quantity climbing out of the axis, so a bar would
-    # mislead about magnitude relative to chance.
-    ax.errorbar([0], [d["auc"]], yerr=[[err_lo], [err_hi]],
+    # Horizontal forest-plot single row, matching the new
+    # verification_summary_card layout so the cross-dataset card
+    # composes alongside 06 / 24 with one consistent visual grammar.
+    ax.errorbar([d["auc"]], [0],
+                xerr=[[err_lo], [err_hi]],
                 fmt="o", color=PALETTE["warn"],
                 ecolor=PALETTE["ink"], elinewidth=1.0,
                 capsize=4.5, capthick=1.0,
                 markersize=9.0, markerfacecolor=PALETTE["warn"],
                 markeredgecolor=PALETTE["ink"], markeredgewidth=0.9,
-                zorder=4, label="cross-dataset AUC (95% CI)")
-    ax.text(0, d["auc"] + err_hi + 0.090, f"{d['auc']:.3f}",
-            ha="center", va="bottom", fontsize=11.0,
+                zorder=4)
+    label = (f"  {d['auc']:.3f}  "
+             f"[{d['auc_ci_low']:.3f}, {d['auc_ci_high']:.3f}]")
+    ax.text(d["auc"] + err_hi + 0.005, 0, label,
+            va="center", ha="left", fontsize=8.5,
             fontweight="bold", color=PALETTE["ink"])
-    ax.text(0, d["auc"] + err_hi + 0.040,
-            f"[{d['auc_ci_low']:.3f}, {d['auc_ci_high']:.3f}]",
-            ha="center", va="bottom", fontsize=7.0,
-            color=PALETTE["neutral"])
-    ax.axhline(0.5, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
+    ax.axvline(0.5, color=PALETTE["neutral"], lw=0.9, ls=(0, (4, 3)),
                label="chance (AUC = 0.5)")
-    ax.set_xticks([0])
-    ax.set_xticklabels(["PhysioNet → IV-2a"])
-    ax.set_xlim(-0.55, 0.55)
-    ax.set_ylim(0.45, 1.05)
-    ax.set_ylabel("A4 AUC (open-set verification)")
+    ax.set_yticks([0])
+    ax.set_yticklabels(["PhysioNet → IV-2a\n(milestone)"])
+    ax.set_ylim(-0.55, 0.55)
+    ax.set_xlim(0.45, 1.005)
+    ax.set_xlabel("A4 AUC (open-set verification)")
     ax.set_title(
         "A4 cross-dataset verification (PhysioNet → IV-2a, milestone)\n"
         f"train n=80 PhysioNet · unseen n=9 IV-2a · EER = {d['eer']:.3f}",
         fontsize=10.0,
     )
-    ax.legend(loc="upper right", fontsize=7.5)
-    ax.grid(axis="y", which="major", linestyle=":", linewidth=0.4,
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.20),
+              fontsize=7.5, frameon=False)
+    ax.grid(axis="x", which="major", linestyle=":", linewidth=0.4,
             alpha=0.35, color=PALETTE["muted"])
     ax.set_axisbelow(True)
     fig.savefig(FIGURES_DIR / "13_a4_cross_dataset.pdf")
