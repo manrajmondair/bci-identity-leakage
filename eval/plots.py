@@ -434,53 +434,92 @@ def verification_summary_card(
     *,
     title: str | None = "A4 open-set verification on unseen subjects",
     chance: float = 0.5,
+    extra_seeds: Sequence[float] | None = None,
+    seed_mean: float | None = None,
+    seed_std: float | None = None,
 ) -> None:
-    """Single-AUC summary figure (used when per-pair scores were not saved).
+    """Bar chart rendering of a single AUC measurement, optionally
+    overlaid with per-seed dots from a multi-seed extension.
 
-    Renders a clean dot-plot of AUC vs chance with a CI bracket plus a
-    small EER + cohort-size annotation underneath. Replaces the old
-    text-overlapping summary card.
+    `extra_seeds` is a list of per-seed AUCs (e.g. from experiment 14 or
+    experiment 34); when supplied, they appear as a strip-plot beside
+    the main bar with mean and std summarised in the legend.
     """
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
 
-    ax.axvline(chance, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
+    # Primary bar (seed-0 measurement)
+    err_hi = auc_ci_high - auc
+    err_lo = auc - auc_ci_low
+    ax.bar([0], [auc],
+           yerr=[[err_lo], [err_hi]],
+           color=PALETTE["accent"], edgecolor=PALETTE["ink"],
+           linewidth=0.5, width=0.45,
+           error_kw=dict(ecolor=PALETTE["ink"], elinewidth=1.0,
+                         capsize=3.5, capthick=1.0),
+           label="seed-0 measurement",
+           zorder=2)
+
+    xticks = [0]
+    xticklabels = ["seed 0"]
+
+    has_multi = extra_seeds is not None and len(extra_seeds) > 0
+    if has_multi:
+        seeds_arr = np.asarray(extra_seeds, dtype=float)
+        rng = np.random.default_rng(0)
+        jit = rng.uniform(-0.07, 0.07, size=len(seeds_arr))
+        ax.scatter(np.ones_like(seeds_arr) + jit, seeds_arr,
+                   color=PALETTE["contrast"], edgecolor=PALETTE["ink"],
+                   linewidth=0.6, s=42, zorder=3,
+                   label=f"per-seed (n={len(seeds_arr)})")
+        smean = seed_mean if seed_mean is not None else float(seeds_arr.mean())
+        sstd = seed_std if seed_std is not None else float(seeds_arr.std(ddof=1))
+        ax.hlines(smean, 0.65, 1.35, color=PALETTE["ink"],
+                  lw=1.2, zorder=4,
+                  label=f"multi-seed mean {smean:.3f} ± {sstd:.3f}")
+        xticks.append(1)
+        xticklabels.append("multi-seed")
+
+    ax.axhline(chance, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
                label=f"chance ({chance:.3f})")
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticklabels)
+    ax.set_xlim(-0.55, 1.55 if has_multi else 0.55)
 
-    # CI bar
-    ax.errorbar([auc], [0.5],
-                xerr=[[auc - auc_ci_low], [auc_ci_high - auc]],
-                fmt="o", color=PALETTE["accent"],
-                ecolor=PALETTE["ink"], elinewidth=1.0, capsize=4.0,
-                capthick=1.0, markersize=8.0,
-                markerfacecolor=PALETTE["accent"],
-                markeredgewidth=1.2,
-                markeredgecolor=PALETTE["ink"])
+    # Y-limits: leave headroom above the bar / dots for value annotations.
+    top_data = max(auc + err_hi, max(extra_seeds) if has_multi else auc + err_hi)
+    bottom = min(chance - 0.04, auc_ci_low - 0.05)
+    ax.set_ylim(bottom, max(top_data + 0.10, 1.02))
+    ax.set_ylabel("AUC")
 
-    ax.text(auc, 0.62, f"AUC $=$ {auc:.3f}", ha="center", va="bottom",
-            fontsize=12, fontweight="bold", color=PALETTE["ink"])
-    ax.text(auc, 0.39,
-            f"95% CI [{auc_ci_low:.3f}, {auc_ci_high:.3f}]",
-            ha="center", va="top", fontsize=8.5,
+    # Value annotation: AUC numerals bold above the bar; CI bracket as a
+    # smaller line just beneath the value (i.e. between the value and
+    # the upper error-cap tick). Both sit ABOVE the bar's upper CI cap.
+    label_y = auc + err_hi + 0.012
+    ax.text(0, label_y + 0.030, f"{auc:.3f}",
+            ha="center", va="bottom", fontsize=11.0,
+            fontweight="bold", color=PALETTE["ink"])
+    ax.text(0, label_y, f"[{auc_ci_low:.3f}, {auc_ci_high:.3f}]",
+            ha="center", va="bottom", fontsize=7.0,
             color=PALETTE["neutral"])
 
-    ax.text(0.02, 0.18,
-            f"trained on {n_train_subjects} subjects · "
-            f"evaluated on {n_test_subjects} unseen subjects · "
-            f"{n_pairs:,} verification pairs · "
-            f"EER $=$ {eer:.3f}",
-            transform=ax.transAxes,
-            ha="left", va="top", fontsize=8.0,
-            color=PALETTE["neutral"], style="italic")
-
-    ax.set_xlim(min(0.35, chance - 0.1), 1.01)
-    ax.set_ylim(0, 1)
-    ax.set_xlabel("AUC")
-    ax.set_yticks([])
-    ax.spines["left"].set_visible(False)
+    # Title is the only header; cohort details belong in the figure
+    # caption (kept off-figure to avoid stacking text above the title).
     if title:
-        ax.set_title(title)
-    ax.legend(loc="lower right", fontsize=7.5)
+        ax.set_title(
+            f"{title}\n"
+            r"\textit{}".replace(r"\textit{}", "")
+            + f"trained on {n_train_subjects} subjects, "
+              f"{n_test_subjects} unseen, {n_pairs:,} pairs, "
+              f"EER = {eer:.3f}",
+            fontsize=10.0,
+        )
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              fontsize=7.5, ncol=4, frameon=False,
+              columnspacing=1.4, handletextpad=0.6)
+    ax.grid(axis="y", which="major", linestyle=":", linewidth=0.4,
+            alpha=0.35, color=PALETTE["muted"])
+    ax.set_axisbelow(True)
     fig.savefig(out_path)
     plt.close(fig)
 

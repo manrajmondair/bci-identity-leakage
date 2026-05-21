@@ -54,6 +54,94 @@ def _annotate_bar(ax, x: float, y: float, *, text: str | None = None,
 # ---------------------------------------------------------------------------
 # A1 -- A3 + Lee 2019 A3 (closed-set bar charts)
 # ---------------------------------------------------------------------------
+def render_within_subject_reid() -> None:
+    """A1 within-subject (experiment 03): per-subject task accuracy +
+    cross-subject re-ID via the all-models attack."""
+    p = RESULTS_DIR / "03_within_subject_reid.json"
+    if not p.exists():
+        return
+    d = json.loads(p.read_text())
+    task_rows = d.get("task_rows", [])
+    attack_rows = d.get("attack_rows", [])
+    if not task_rows or not attack_rows:
+        return
+
+    plt.rcParams.update(journal_style())
+    fig, (ax_l, ax_r) = plt.subplots(1, 2, figsize=(8.4, 3.8))
+
+    # Left panel: per-subject task accuracy as a strip plot per victim
+    pretty_v = {"eegnet": "EEGNet", "fbcsp": "FBCSP+LDA",
+                "riemann": "Riemann TS"}
+    victims = list(pretty_v.keys())
+    rng = np.random.default_rng(0)
+    for i, v in enumerate(victims):
+        accs = [r["task_acc"] for r in task_rows
+                if r["victim_family"] == v]
+        if not accs:
+            continue
+        jit = rng.uniform(-0.10, 0.10, size=len(accs))
+        ax_l.scatter(np.full(len(accs), i) + jit, accs,
+                     color=PALETTE["accent"], edgecolor=PALETTE["ink"],
+                     linewidth=0.4, s=34, alpha=0.85, zorder=3)
+        ax_l.hlines(np.mean(accs), i - 0.22, i + 0.22,
+                    color=PALETTE["ink"], lw=1.2, zorder=4)
+        ax_l.text(i, max(accs) + 0.03, f"mean {np.mean(accs):.2f}",
+                  ha="center", va="bottom", fontsize=7.5,
+                  color=PALETTE["neutral"])
+    ax_l.axhline(0.25, color=PALETTE["neutral"], lw=0.7, ls=(0, (4, 3)),
+                 label="chance (4-class = 0.250)")
+    ax_l.set_xticks(np.arange(len(victims)))
+    ax_l.set_xticklabels([pretty_v[v] for v in victims])
+    ax_l.set_ylabel("Per-subject motor-imagery task accuracy")
+    ax_l.set_ylim(0, 1.0)
+    ax_l.set_title("Within-subject task performance (n=10)")
+    ax_l.legend(loc="lower right", fontsize=7.5)
+    _maybe_grid(ax_l, "y")
+
+    # Right panel: all-models attack re-ID across victim families
+    victim_map = {"eegnet": "EEGNet", "fbcsp_lda": "FBCSP+LDA",
+                  "riemann_ts_lr": "Riemann TS"}
+    families = list(victim_map.keys())
+    attacks = sorted({r["attack"] for r in attack_rows})
+    width = 0.38
+    x = np.arange(len(families))
+    for j, atk in enumerate(attacks):
+        ys, ylo, yhi = [], [], []
+        for fam in families:
+            row = next((r for r in attack_rows
+                        if r["victim_family"] == fam and r["attack"] == atk),
+                       None)
+            ys.append(row["top1"] if row else np.nan)
+            ylo.append((row["top1"] - row["top1_ci_low"]) if row else 0)
+            yhi.append((row["top1_ci_high"] - row["top1"]) if row else 0)
+        ax_r.bar(x + (j - (len(attacks) - 1) / 2) * width, ys, width,
+                 yerr=[ylo, yhi],
+                 color=PALETTE["accent"] if atk == "argmax_conf"
+                                            else PALETTE["contrast"],
+                 edgecolor=PALETTE["ink"], linewidth=0.5,
+                 label=atk.replace("_", " "),
+                 error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.7,
+                               capsize=2.5, capthick=0.7))
+    ax_r.axhline(attack_rows[0]["chance_top1"],
+                 color=PALETTE["neutral"], lw=0.7, ls=(0, (4, 3)),
+                 label=f"chance ({attack_rows[0]['chance_top1']:.3f})")
+    ax_r.set_xticks(x)
+    ax_r.set_xticklabels([victim_map[f] for f in families], fontsize=8.0)
+    ax_r.set_ylabel("Re-ID top-1 (all-models attack)")
+    ax_r.set_ylim(0, 1.05)
+    ax_r.set_title("Within-subject re-identification (10 personal victims)")
+    ax_r.legend(loc="upper left", fontsize=7.5)
+    _maybe_grid(ax_r, "y")
+
+    fig.suptitle(
+        "Within-subject re-ID baseline  (experiment 03, PhysioNet, n=10)",
+        fontsize=10.5,
+    )
+    fig.savefig(FIGURES_DIR / "03_within_subject_reid.pdf")
+    plt.close(fig)
+    print("regenerated figures/03_within_subject_reid.pdf")
+
+
 def render_a1() -> None:
     rows = json.loads((RESULTS_DIR / "02_closed_set_reid.json").read_text())
     n = rows[0]["n_subjects"]
@@ -129,6 +217,17 @@ def render_a4() -> None:
                    f"{a4['n_pairs']:,} pairs)"),
         )
     else:
+        # Overlay the 5-seed extension from experiment 14 when available
+        multi_seed_path = RESULTS_DIR / "14_a4_multi_seed.json"
+        extra_seeds = None
+        seed_mean = None
+        seed_std = None
+        if multi_seed_path.exists():
+            ms = json.loads(multi_seed_path.read_text())
+            extra_seeds = [r["auc"] for r in ms.get("per_seed", [])]
+            agg = ms.get("aggregate", {})
+            seed_mean = agg.get("auc_mean")
+            seed_std = agg.get("auc_std")
         verification_summary_card(
             auc=a4["auc"], auc_ci_low=a4["auc_ci_low"],
             auc_ci_high=a4["auc_ci_high"], eer=a4["eer"],
@@ -138,11 +237,28 @@ def render_a4() -> None:
             out_path=FIGURES_DIR / "06_a4_open_set.pdf",
             title=("A4 open-set verification "
                    "(PhysioNet, 24 unseen subjects)"),
+            extra_seeds=extra_seeds,
+            seed_mean=seed_mean, seed_std=seed_std,
         )
     print("regenerated figures/06_a4_open_set.pdf")
 
 
 def render_lee2019_a4() -> None:
+    # Pull per-seed AUCs from experiment 34 when available so the
+    # within-session variant gets a strip-plot overlay alongside the
+    # seed-0 bar.
+    multi_seed_path = RESULTS_DIR / "34_tier1_multi_seed.json"
+    a4_seeds = None
+    a4_mean = None
+    a4_std = None
+    if multi_seed_path.exists():
+        ms = json.loads(multi_seed_path.read_text())
+        agg = (ms.get("rows", {}).get("a4_lee2019", {})
+                  .get("aggregated", {}).get("auc_within_session", {}))
+        a4_seeds = agg.get("values")
+        a4_mean = agg.get("mean")
+        a4_std = agg.get("std")
+
     for variant, label in (("within_session", "within-session"),
                             ("cross_session", "cross-session")):
         meta_path = RESULTS_DIR / f"24_a4_lee2019_{variant}.json"
@@ -158,6 +274,9 @@ def render_lee2019_a4() -> None:
             out_path=FIGURES_DIR / f"24_a4_lee2019_{variant}.pdf",
             title=(f"A4 open-set verification (Lee 2019, {label}, "
                    f"{meta['n_test_subjects']} unseen subjects)"),
+            extra_seeds=a4_seeds if variant == "within_session" else None,
+            seed_mean=a4_mean if variant == "within_session" else None,
+            seed_std=a4_std if variant == "within_session" else None,
         )
         print(f"regenerated figures/24_a4_lee2019_{variant}.pdf")
 
@@ -168,34 +287,59 @@ def render_lee2019_a4() -> None:
 def _render_mi_card(*, label: str, auc: float, lo: float, hi: float,
                     advantage: float, n_members: int, n_nonmembers: int,
                     title: str, out_path: Path) -> None:
+    """Two-bar MI summary: AUC bar + TPR-FPR advantage bar.
+
+    Both metrics share the [0, 1] axis; chance / random reference is at
+    0.5 for AUC and 0 for advantage, indicated by the dashed lines.
+    """
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
-    ax.axvline(0.5, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
-               label="chance (AUC = 0.5)")
-    ax.errorbar([auc], [0.5],
-                xerr=[[auc - lo], [hi - auc]],
-                fmt="o", color=PALETTE["accent"],
-                ecolor=PALETTE["ink"], elinewidth=1.0,
-                capsize=4.0, capthick=1.0, markersize=8.0,
-                markerfacecolor=PALETTE["accent"],
-                markeredgewidth=1.2, markeredgecolor=PALETTE["ink"])
-    ax.text(auc, 0.65, f"AUC $=$ {auc:.3f}", ha="center", va="bottom",
-            fontsize=12, fontweight="bold", color=PALETTE["ink"])
-    ax.text(auc, 0.38, f"95% CI [{lo:.3f}, {hi:.3f}]",
-            ha="center", va="top", fontsize=8.5, color=PALETTE["neutral"])
-    ax.text(0.02, 0.18,
-            f"{label} · {n_members} members vs {n_nonmembers} non-members "
-            f"· TPR$-$FPR advantage $=$ {advantage:.3f}",
-            transform=ax.transAxes,
-            ha="left", va="top", fontsize=8.0,
-            color=PALETTE["neutral"], style="italic")
-    ax.set_xlim(0.30, 1.02)
-    ax.set_ylim(0, 1)
-    ax.set_xlabel("MI AUC")
-    ax.set_yticks([])
-    ax.spines["left"].set_visible(False)
-    ax.set_title(title)
-    ax.legend(loc="lower right", fontsize=7.5)
+    labels = ["MI AUC", "TPR − FPR advantage"]
+    x = np.arange(len(labels))
+    values = np.array([auc, advantage])
+    err_lo = np.array([auc - lo, 0.0])
+    err_hi = np.array([hi - auc, 0.0])
+    colors = [PALETTE["accent"], PALETTE["warn"]]
+    bars = ax.bar(x, values, color=colors,
+                  yerr=[err_lo, err_hi],
+                  edgecolor=PALETTE["ink"], linewidth=0.5, width=0.50,
+                  error_kw=dict(ecolor=PALETTE["ink"], elinewidth=1.0,
+                                capsize=3.5, capthick=1.0))
+    # Bar value labels above the upper CI; for the AUC bar the CI bracket
+    # sits between the value text and the error-bar cap (smaller font,
+    # neutral colour) so the two pieces of information never overlap.
+    auc_label_y = auc + err_hi[0] + 0.012
+    ax.text(x[0], auc_label_y + 0.030, f"{auc:.3f}",
+            ha="center", va="bottom", fontsize=11.0,
+            fontweight="bold", color=PALETTE["ink"])
+    ax.text(x[0], auc_label_y, f"[{lo:.3f}, {hi:.3f}]",
+            ha="center", va="bottom", fontsize=7.0,
+            color=PALETTE["neutral"])
+    ax.text(x[1], advantage + 0.025, f"{advantage:.3f}",
+            ha="center", va="bottom", fontsize=11.0,
+            fontweight="bold", color=PALETTE["ink"])
+    # Reference lines
+    ax.hlines(0.5, x[0] - 0.4, x[0] + 0.4, color=PALETTE["neutral"],
+              lw=1.0, ls=(0, (4, 3)),
+              label="MI chance (AUC = 0.5)")
+    ax.hlines(0.0, x[1] - 0.4, x[1] + 0.4, color=PALETTE["neutral"],
+              lw=1.0, ls=":",
+              label="advantage chance (0)")
+    ax.set_xticks(x); ax.set_xticklabels(labels)
+    ax.set_ylim(-0.08, 1.18)
+    ax.set_ylabel("metric value")
+    # Cohort line as a subtitle below the axes title
+    ax.set_title(
+        f"{title}\n"
+        f"{label} · {n_members} members vs {n_nonmembers} non-members",
+        fontsize=10.0,
+    )
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16),
+              fontsize=7.5, ncol=2, frameon=False,
+              columnspacing=1.6, handletextpad=0.6)
+    ax.grid(axis="y", which="major", linestyle=":", linewidth=0.4,
+            alpha=0.35, color=PALETTE["muted"])
+    ax.set_axisbelow(True)
     fig.savefig(out_path)
     plt.close(fig)
 
@@ -260,15 +404,18 @@ def render_a5_classical() -> None:
                   edgecolor=PALETTE["ink"], linewidth=0.6, width=0.55,
                   error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.9,
                                 capsize=3, capthick=0.9))
-    ax.axhline(0.5, color=PALETTE["neutral"], lw=0.7, ls=(0, (4, 3)),
+    ax.axhline(0.5, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
                label="chance (AUC = 0.5)")
-    for b, v in zip(bars, values):
-        _annotate_bar(ax, b.get_x() + b.get_width() / 2, v, fontsize=7.5,
-                      dy=0.015)
-    ax.set_ylim(0.45, 1.05)
+    for b, v, h in zip(bars, values, hi):
+        ax.text(b.get_x() + b.get_width() / 2, v + h + 0.015, f"{v:.3f}",
+                ha="center", va="bottom", fontsize=9.0,
+                fontweight="bold", color=PALETTE["ink"])
+    ax.set_ylim(0.45, 1.10)
     ax.set_ylabel("MI AUC")
     ax.set_title("A5 black-box membership inference, victim comparison (PhysioNet)")
-    ax.legend(loc="lower right", fontsize=7.5)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              fontsize=7.5, ncol=2, frameon=False,
+              columnspacing=1.6, handletextpad=0.6)
     _maybe_grid(ax, "y")
     fig.savefig(FIGURES_DIR / "16_a5_classical.pdf")
     plt.close(fig)
@@ -524,36 +671,37 @@ def render_a4_cross_dataset() -> None:
     d = json.loads(p.read_text())
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
-    ax.axvline(0.5, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
-               label="chance (AUC = 0.5)")
-    ax.errorbar([d["auc"]], [0.5],
-                xerr=[[d["auc"] - d["auc_ci_low"]],
-                      [d["auc_ci_high"] - d["auc"]]],
-                fmt="o", color=PALETTE["warn"],
-                ecolor=PALETTE["ink"], elinewidth=1.0,
-                capsize=4.0, capthick=1.0, markersize=8.0,
-                markerfacecolor=PALETTE["warn"],
-                markeredgewidth=1.2, markeredgecolor=PALETTE["ink"])
-    ax.text(d["auc"], 0.65, f"AUC $=$ {d['auc']:.3f}", ha="center",
-            va="bottom", fontsize=12, fontweight="bold",
-            color=PALETTE["ink"])
-    ax.text(d["auc"], 0.38,
-            f"95% CI [{d['auc_ci_low']:.3f}, {d['auc_ci_high']:.3f}]",
-            ha="center", va="top", fontsize=8.5,
+    err_lo = d["auc"] - d["auc_ci_low"]
+    err_hi = d["auc_ci_high"] - d["auc"]
+    bar = ax.bar([0], [d["auc"]], yerr=[[err_lo], [err_hi]],
+                 color=PALETTE["warn"], edgecolor=PALETTE["ink"],
+                 linewidth=0.5, width=0.45,
+                 error_kw=dict(ecolor=PALETTE["ink"], elinewidth=1.0,
+                               capsize=3.5, capthick=1.0))
+    ax.text(0, d["auc"] + err_hi + 0.042, f"{d['auc']:.3f}",
+            ha="center", va="bottom", fontsize=11.0,
+            fontweight="bold", color=PALETTE["ink"])
+    ax.text(0, d["auc"] + err_hi + 0.022,
+            f"[{d['auc_ci_low']:.3f}, {d['auc_ci_high']:.3f}]",
+            ha="center", va="bottom", fontsize=7.0,
             color=PALETTE["neutral"])
-    ax.text(0.02, 0.18,
-            f"train: PhysioNet 80-subject random subset "
-            f"· test: BCI IV-2a 9 unseen subjects "
-            f"· EER $=$ {d['eer']:.3f}",
-            transform=ax.transAxes, ha="left", va="top",
-            fontsize=8.0, color=PALETTE["neutral"], style="italic")
-    ax.set_xlim(0.30, 1.02)
-    ax.set_ylim(0, 1)
-    ax.set_xlabel("AUC")
-    ax.set_yticks([])
-    ax.spines["left"].set_visible(False)
-    ax.set_title("A4 cross-dataset verification (PhysioNet → IV-2a, milestone)")
-    ax.legend(loc="lower right", fontsize=7.5)
+    ax.axhline(0.5, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
+               label="chance (AUC = 0.5)")
+    ax.set_xticks([0])
+    ax.set_xticklabels(["PhysioNet → IV-2a"])
+    ax.set_xlim(-0.55, 0.55)
+    ax.set_ylim(0.45, 1.05)
+    ax.set_ylabel("A4 AUC (open-set verification)")
+    ax.set_title(
+        "A4 cross-dataset verification (PhysioNet → IV-2a, milestone)\n"
+        f"train: 80 PhysioNet subjects, test: 9 unseen IV-2a subjects, "
+        f"EER = {d['eer']:.3f}",
+        fontsize=10.0,
+    )
+    ax.legend(loc="upper right", fontsize=7.5)
+    ax.grid(axis="y", which="major", linestyle=":", linewidth=0.4,
+            alpha=0.35, color=PALETTE["muted"])
+    ax.set_axisbelow(True)
     fig.savefig(FIGURES_DIR / "13_a4_cross_dataset.pdf")
     plt.close(fig)
     print("regenerated figures/13_a4_cross_dataset.pdf")
@@ -586,14 +734,22 @@ def render_a4_multi_seed() -> None:
                label="chance (AUC = 0.5)")
     ax.set_xticks(seeds)
     ax.set_xlabel("Random seed")
-    ax.set_ylabel("A4 AUC (24 unseen subjects per split)")
+    ax.set_ylabel("A4 AUC")
     ax.set_ylim(0.50, 1.0)
-    ax.set_title("A4 PhysioNet multi-seed replication  (5 random 80 / 24 splits)")
+    ax.set_title("A4 PhysioNet multi-seed replication  "
+                 "(5 random 80 / 24 splits, 24 unseen subjects each)")
     ax.legend(loc="lower right", fontsize=7.5)
     _maybe_grid(ax, "y")
     fig.savefig(FIGURES_DIR / "14_a4_multi_seed.pdf")
     plt.close(fig)
     print("regenerated figures/14_a4_multi_seed.pdf")
+
+
+_ATTACK_LABEL = {
+    "logreg_probe":      "logreg probe\n(generic)",
+    "deep_mlp_probe":    "deep MLP probe\n(generic)",
+    "encoder_finetune":  "encoder fine-tune\n(adaptive)",
+}
 
 
 def _adaptive_attacker_bar(*, json_path: Path, out_path: Path, title: str,
@@ -604,8 +760,9 @@ def _adaptive_attacker_bar(*, json_path: Path, out_path: Path, title: str,
     d = json.loads(json_path.read_text())
     attacks = d["attacks"]
     plt.rcParams.update(journal_style())
-    fig, ax = plt.subplots(figsize=FIG_DOUBLE)
-    labels = [a["attack"].replace("_", "\n") for a in attacks]
+    fig, ax = plt.subplots(figsize=FIG_DOUBLE_TALL)
+    labels = [_ATTACK_LABEL.get(a["attack"], a["attack"].replace("_", " "))
+              for a in attacks]
     top1 = np.array([a["top1"] for a in attacks])
     lo = top1 - np.array([a["top1_ci_low"] for a in attacks])
     hi = np.array([a["top1_ci_high"] for a in attacks]) - top1
@@ -615,16 +772,20 @@ def _adaptive_attacker_bar(*, json_path: Path, out_path: Path, title: str,
                   edgecolor=PALETTE["ink"], linewidth=0.5, width=0.55,
                   error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.9,
                                 capsize=3, capthick=0.9))
-    for b, v in zip(bars, top1):
-        _annotate_bar(ax, b.get_x() + b.get_width() / 2, v, fontsize=7.5)
+    for b, v, h in zip(bars, top1, hi):
+        ax.text(b.get_x() + b.get_width() / 2, v + h + 0.022, f"{v:.3f}",
+                ha="center", va="bottom", fontsize=9.0,
+                fontweight="bold", color=PALETTE["ink"])
     ax.axhline(baseline, color=PALETTE["neutral"], lw=1.0,
                ls=(0, (4, 3)), label=f"{baseline_label} ({baseline:.3f})")
     ax.axhline(attacks[0]["chance_top1"], color=PALETTE["fail"],
                lw=0.7, ls=":", label=f"chance ({attacks[0]['chance_top1']:.3f})")
     ax.set_ylabel("Re-ID top-1")
-    ax.set_ylim(0, 1.0)
+    ax.set_ylim(0, max(top1.max() + max(hi) + 0.12, baseline + 0.10))
     ax.set_title(title)
-    ax.legend(loc="upper right", fontsize=7.5)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.20),
+              fontsize=7.5, ncol=2, frameon=False,
+              columnspacing=1.6, handletextpad=0.6)
     _maybe_grid(ax, "y")
     fig.savefig(out_path)
     plt.close(fig)
@@ -773,52 +934,71 @@ def render_subgroup_fairness() -> None:
     victims = [v for v in ("fbcsp", "riemann") if v in summary]
     if not victims:
         return
+    pretty = {"fbcsp": "FBCSP + LDA", "riemann": "Riemann tang.-space"}
+
     plt.rcParams.update(journal_style())
-    fig, axes = plt.subplots(1, 2, figsize=FIG_DOUBLE_TALL)
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.6))
     width = 0.36
     x = np.arange(len(victims))
 
-    # Sex panel
-    male = [summary[v]["sex_M_mean"] for v in victims]
-    female = [summary[v]["sex_F_mean"] for v in victims]
+    def _ci_pair(v: str, key_ci: str):
+        ci = summary[v][key_ci]
+        return ci[0], ci[1]
+
+    # ---- Sex panel ----
+    male = np.array([summary[v]["sex_M_mean"] for v in victims])
+    female = np.array([summary[v]["sex_F_mean"] for v in victims])
     pvals_sex = [summary[v]["sex_diff_p"] for v in victims]
     axes[0].bar(x - width / 2, male, width, color=PALETTE["accent"],
                 edgecolor=PALETTE["ink"], linewidth=0.5, label="male")
     axes[0].bar(x + width / 2, female, width, color=PALETTE["contrast"],
                 edgecolor=PALETTE["ink"], linewidth=0.5, label="female")
+    for xi, m, f in zip(x, male, female):
+        axes[0].text(xi - width / 2, m + 0.012, f"{m:.2f}",
+                     ha="center", va="bottom", fontsize=7.0,
+                     color=PALETTE["ink"])
+        axes[0].text(xi + width / 2, f + 0.012, f"{f:.2f}",
+                     ha="center", va="bottom", fontsize=7.0,
+                     color=PALETTE["ink"])
     for xi, p_ in zip(x, pvals_sex):
-        axes[0].text(xi, max(male + female) * 1.04,
-                     f"p = {p_:.2f}", ha="center", va="bottom",
-                     fontsize=7.5, color=PALETTE["neutral"])
+        axes[0].text(xi, 1.10, f"p = {p_:.2f}",
+                     ha="center", va="bottom", fontsize=7.5,
+                     color=PALETTE["neutral"])
     axes[0].set_xticks(x)
-    axes[0].set_xticklabels([v.upper() for v in victims])
+    axes[0].set_xticklabels([pretty[v] for v in victims], fontsize=8.0)
     axes[0].set_ylabel("Per-subject A1 attack accuracy")
-    axes[0].set_ylim(0, 1.15)
+    axes[0].set_ylim(0, 1.22)
     axes[0].set_title("Sex stratification")
-    axes[0].legend(loc="lower right", fontsize=7.5)
+    axes[0].legend(loc="lower left", fontsize=7.5)
     _maybe_grid(axes[0], "y")
 
-    # Age tertile panel
-    low = [summary[v]["age_low_mean"] for v in victims]
-    high = [summary[v]["age_high_mean"] for v in victims]
+    # ---- Age tertile panel ----
+    low = np.array([summary[v]["age_low_mean"] for v in victims])
+    high = np.array([summary[v]["age_high_mean"] for v in victims])
     pvals_age = [summary[v]["age_diff_p"] for v in victims]
     axes[1].bar(x - width / 2, low, width, color=PALETTE["accent"],
-                edgecolor=PALETTE["ink"], linewidth=0.5, label="low age tertile")
+                edgecolor=PALETTE["ink"], linewidth=0.5, label="low tertile")
     axes[1].bar(x + width / 2, high, width, color=PALETTE["contrast"],
-                edgecolor=PALETTE["ink"], linewidth=0.5, label="high age tertile")
+                edgecolor=PALETTE["ink"], linewidth=0.5, label="high tertile")
+    for xi, lo_v, hi_v in zip(x, low, high):
+        axes[1].text(xi - width / 2, lo_v + 0.012, f"{lo_v:.2f}",
+                     ha="center", va="bottom", fontsize=7.0,
+                     color=PALETTE["ink"])
+        axes[1].text(xi + width / 2, hi_v + 0.012, f"{hi_v:.2f}",
+                     ha="center", va="bottom", fontsize=7.0,
+                     color=PALETTE["ink"])
     for xi, p_ in zip(x, pvals_age):
-        axes[1].text(xi, max(low + high) * 1.04,
-                     f"p = {p_:.2f}", ha="center", va="bottom",
-                     fontsize=7.5, color=PALETTE["neutral"])
+        axes[1].text(xi, 1.10, f"p = {p_:.2f}",
+                     ha="center", va="bottom", fontsize=7.5,
+                     color=PALETTE["neutral"])
     axes[1].set_xticks(x)
-    axes[1].set_xticklabels([v.upper() for v in victims])
-    axes[1].set_ylabel("Per-subject A1 attack accuracy")
-    axes[1].set_ylim(0, 1.15)
+    axes[1].set_xticklabels([pretty[v] for v in victims], fontsize=8.0)
+    axes[1].set_ylim(0, 1.22)
     axes[1].set_title("Age tertile stratification")
-    axes[1].legend(loc="lower right", fontsize=7.5)
+    axes[1].legend(loc="lower left", fontsize=7.5)
     _maybe_grid(axes[1], "y")
 
-    fig.suptitle("W5.1 subgroup fairness  (FBCSP + Riemann, PhysioNet n=97 / 91)",
+    fig.suptitle("W5.1 subgroup fairness  (PhysioNet, n=97 sex-known / 91 age-known)",
                  fontsize=10.5)
     fig.savefig(FIGURES_DIR / "12_subgroup_fairness.pdf")
     plt.close(fig)
@@ -1173,10 +1353,11 @@ def render_theory_scaling() -> None:
         return
     d = json.loads(p.read_text())
     plt.rcParams.update(journal_style())
-    fig, (ax_l, ax_r) = plt.subplots(1, 2, figsize=FIG_DOUBLE_TALL)
+    fig, (ax_l, ax_r) = plt.subplots(1, 2, figsize=(8.2, 3.6))
 
     # Left: cohort-size scaling, log-log
     pretty_victim = {"eegnet": "EEGNet", "riemann": "Riemann tangent-space"}
+    riemann_at_ceiling = False
     for victim, color, marker in (("eegnet", PALETTE["accent"], "o"),
                                    ("riemann", PALETTE["contrast"], "s")):
         rows = d.get("scaling", {}).get(victim, [])
@@ -1184,12 +1365,26 @@ def render_theory_scaling() -> None:
             continue
         ns = np.array([r["n"] for r in rows])
         t1 = np.array([r["top1"] for r in rows])
+        # If Riemann is essentially at ceiling for every tested N, skip the
+        # log-scale dots (they degenerate to a single near-zero point) and
+        # annotate the ceiling fact in a band along the bottom instead.
+        if victim == "riemann" and (1.0 - t1).max() < 1e-3:
+            riemann_at_ceiling = True
+            continue
         ax_l.plot(ns, 1.0 - t1, marker=marker, color=color, lw=1.3,
                   markerfacecolor="white", markeredgewidth=1.2,
                   markersize=5, label=pretty_victim[victim])
     ax_l.plot([10, 104], [1 - 1 / 10, 1 - 1 / 104],
               color=PALETTE["neutral"], lw=0.7, ls=":",
               label="(1 − chance) reference  $= 1 - 1/N$")
+    if riemann_at_ceiling:
+        ax_l.axhspan(1e-4, 6e-4, color=PALETTE["contrast"], alpha=0.18,
+                     zorder=1)
+        ax_l.text(11, 3e-4,
+                  "Riemann tangent-space at ceiling (top-1 ≥ 0.9996) "
+                  "across every tested N",
+                  color=PALETTE["contrast"], fontsize=7.5, va="center",
+                  style="italic")
     ax_l.set_xscale("log"); ax_l.set_yscale("log")
     ax_l.set_xlabel("Cohort size  N")
     ax_l.set_ylabel("1 − A1 top-1  (log)")
@@ -1297,36 +1492,47 @@ def render_lee2019_fairness() -> None:
         return
     d = json.loads(p.read_text())
     plt.rcParams.update(journal_style())
-    fig, axes = plt.subplots(1, 3, figsize=FIG_TRIPLE, sharey=True)
+    # Wider canvas so each panel has enough horizontal room for its
+    # two-line title (victim name + task / decile-gap annotation) without
+    # bleeding into the neighbouring panel.
+    fig, axes = plt.subplots(1, 3, figsize=(8.2, 3.6), sharey=True)
     color_for = {"fbcsp": PALETTE["accent"], "riemann": PALETTE["contrast"],
                  "eegnet": PALETTE["ok"]}
-    title_for = {"fbcsp": "FBCSP + LDA", "riemann": "Riemann tang.-space",
+    title_for = {"fbcsp": "FBCSP + LDA",
+                 "riemann": "Riemann tang.-space",
                  "eegnet": "EEGNet"}
     for ax, victim in zip(axes, ("fbcsp", "riemann", "eegnet")):
         if victim not in d["victim_results"]:
             ax.axis("off"); continue
         v = d["victim_results"][victim]
         h = v["heterogeneity"]
-        per_subj = v.get("per_subject_accuracy")
+        per_subj = v.get("per_subject_accuracy") or {}
         if per_subj:
             accs = np.array(list(per_subj.values()))
         else:
+            # If for some reason per-subject data is absent, fall back to
+            # plotting min/mean/max -- but make it visible (the prior
+            # version produced three near-invisible bars).
             accs = np.array([h["min"], h["mean"], h["max"]])
         ax.hist(accs, bins=14, color=color_for[victim],
-                edgecolor=PALETTE["ink"], linewidth=0.5, alpha=0.85)
-        ax.axvline(h["mean"], color=PALETTE["ink"], lw=1.0,
+                edgecolor=PALETTE["ink"], linewidth=0.4, alpha=0.85)
+        ax.axvline(h["mean"], color=PALETTE["ink"], lw=1.1,
                    label=f"mean {h['mean']:.3f}")
-        ax.set_title(f"{title_for[victim]}\n"
-                     f"task = {v['task_acc']:.3f}  ·  "
-                     f"decile gap = {h['decile_gap']:.3f}")
+        ax.set_title(
+            f"{title_for[victim]}\n"
+            f"task = {v['task_acc']:.3f}, "
+            f"decile gap = {h['decile_gap']:.3f}",
+            fontsize=9.5,
+        )
         ax.set_xlim(0, 1.05)
         ax.set_xlabel("Per-subject A1 top-1")
         if victim == "fbcsp":
-            ax.set_ylabel("Subject count")
+            ax.set_ylabel("Subject count  (n=54)")
         ax.legend(loc="upper left", fontsize=7.5)
         _maybe_grid(ax, "y")
     fig.suptitle(
-        "Lee 2019 within-cohort heterogeneity  (54 subjects, within-session)",
+        "Lee 2019 within-cohort heterogeneity  "
+        "(54 subjects, within-session protocol)",
         fontsize=10.5,
     )
     fig.savefig(FIGURES_DIR / "32_fairness_lee2019.pdf")
@@ -1440,7 +1646,8 @@ def main() -> None:
     print("Regenerating all figures from result JSONs ...\n")
     for fn in (
         # Milestone-era
-        render_a1, render_a2, render_a3, render_a4, render_a5,
+        render_a1, render_within_subject_reid,
+        render_a2, render_a3, render_a4, render_a5,
         render_d1_pca,
         lambda: render_d1_other("noise"),
         lambda: render_d1_other("channel_drop"),
