@@ -134,7 +134,7 @@ def render_within_subject_reid() -> None:
     _maybe_grid(ax_r, "y")
 
     fig.suptitle(
-        "Within-subject re-ID baseline  (experiment 03, PhysioNet, n=10)",
+        "Within-subject re-ID baseline (experiment 03, PhysioNet, n=10)",
         fontsize=10.5,
     )
     fig.savefig(FIGURES_DIR / "03_within_subject_reid.pdf")
@@ -235,8 +235,7 @@ def render_a4() -> None:
             n_test_subjects=a4["n_test_subjects"],
             n_pairs=a4["n_pairs"],
             out_path=FIGURES_DIR / "06_a4_open_set.pdf",
-            title=("A4 open-set verification "
-                   "(PhysioNet, 24 unseen subjects)"),
+            title="A4 open-set verification (PhysioNet)",
             extra_seeds=extra_seeds,
             seed_mean=seed_mean, seed_std=seed_std,
         )
@@ -272,8 +271,7 @@ def render_lee2019_a4() -> None:
             n_test_subjects=meta["n_test_subjects"],
             n_pairs=meta["n_pairs"],
             out_path=FIGURES_DIR / f"24_a4_lee2019_{variant}.pdf",
-            title=(f"A4 open-set verification (Lee 2019, {label}, "
-                   f"{meta['n_test_subjects']} unseen subjects)"),
+            title=f"A4 open-set verification (Lee 2019, {label})",
             extra_seeds=a4_seeds if variant == "within_session" else None,
             seed_mean=a4_mean if variant == "within_session" else None,
             seed_std=a4_std if variant == "within_session" else None,
@@ -305,14 +303,16 @@ def _render_mi_card(*, label: str, auc: float, lo: float, hi: float,
                   edgecolor=PALETTE["ink"], linewidth=0.5, width=0.50,
                   error_kw=dict(ecolor=PALETTE["ink"], elinewidth=1.0,
                                 capsize=3.5, capthick=1.0))
-    # Bar value labels above the upper CI; for the AUC bar the CI bracket
-    # sits between the value text and the error-bar cap (smaller font,
-    # neutral colour) so the two pieces of information never overlap.
-    auc_label_y = auc + err_hi[0] + 0.012
-    ax.text(x[0], auc_label_y + 0.030, f"{auc:.3f}",
+    # Bar value labels above the upper CI cap. The CI bracket sits just
+    # above the cap; the bold AUC numeral sits noticeably higher so the
+    # two pieces of text are visually distinct and neither overlaps the
+    # cap or each other.
+    ci_y = auc + err_hi[0] + 0.030
+    value_y = ci_y + 0.070
+    ax.text(x[0], value_y, f"{auc:.3f}",
             ha="center", va="bottom", fontsize=11.0,
             fontweight="bold", color=PALETTE["ink"])
-    ax.text(x[0], auc_label_y, f"[{lo:.3f}, {hi:.3f}]",
+    ax.text(x[0], ci_y, f"[{lo:.3f}, {hi:.3f}]",
             ha="center", va="bottom", fontsize=7.0,
             color=PALETTE["neutral"])
     ax.text(x[1], advantage + 0.025, f"{advantage:.3f}",
@@ -326,7 +326,7 @@ def _render_mi_card(*, label: str, auc: float, lo: float, hi: float,
               lw=1.0, ls=":",
               label="advantage chance (0)")
     ax.set_xticks(x); ax.set_xticklabels(labels)
-    ax.set_ylim(-0.08, 1.18)
+    ax.set_ylim(-0.08, 1.28)
     ax.set_ylabel("metric value")
     # Cohort line as a subtitle below the axes title
     ax.set_title(
@@ -484,7 +484,7 @@ def render_d1_pca() -> None:
     sweep_key = "k" if rows_eeg and "k" in rows_eeg[0] else "strength"
     _defense_sweep_panel(
         rows_eeg, FIGURES_DIR / "07_d1_pca.pdf",
-        title=(f"D1 PCA channel-compression defense  "
+        title=(f"D1 PCA channel-compression defense "
                f"(EEGNet victim, n={rows[0]['n_subjects']})"),
         x_label="PCA components (k)", key=sweep_key,
     )
@@ -528,7 +528,7 @@ def render_d2_dann() -> None:
     _defense_sweep_panel(
         rows, FIGURES_DIR / "09_d2_dann.pdf",
         title=(f"D2 DANN adversarial subject-invariance "
-               f"(n={rows[0]['n_subjects']})"),
+               f"(EEGNet victim, n={rows[0]['n_subjects']})"),
         x_label="DANN gradient-reversal strength λ",
         key="lambda",
     )
@@ -591,7 +591,13 @@ def render_d3() -> None:
 
 
 def render_pareto() -> None:
-    """All-defense Pareto: re-ID vs task acc, color-coded by family."""
+    """All-defense Pareto: re-ID vs task acc, color-coded by family.
+
+    The defenses sweep only EEGNet (the victim used by the D1/D2/D3
+    columns), so the no-defense reference is filtered to the EEGNet row
+    of A1 — otherwise the two extra A1 stars (FBCSP, Riemann) would
+    misleadingly suggest we evaluate defenses on classical victims too.
+    """
     plt.rcParams.update(journal_style())
     points = []  # (family, defense_label, top1, task_acc)
 
@@ -600,6 +606,17 @@ def render_pareto() -> None:
             return
         for r in json.loads(path.read_text()):
             if r.get("probe") != "logreg":
+                continue
+            # Accept the EEGNet variant tags used by each defense JSON:
+            #   D1   → "eegnet"
+            #   D2   → "eegnet_dann"
+            #   D3   → "eegnet_dpsgd"
+            # Rows lacking a `victim` field are legacy EEGNet runs.
+            # Cross-victim rows (FBCSP, Riemann tangent-space) are
+            # filtered out so the no-defense reference and the defense
+            # scatter share the same victim baseline.
+            row_victim = r.get("victim", "eegnet")
+            if row_victim not in ("eegnet", "eegnet_dann", "eegnet_dpsgd"):
                 continue
             label = r.get("defense") or r.get("transform") or ""
             points.append((family, label, r["top1"], r["task_acc"]))
@@ -645,8 +662,10 @@ def render_pareto() -> None:
                    label=fam, zorder=3 + (fam == "no defense"))
     ax.set_xlabel("Motor-imagery task accuracy")
     ax.set_ylabel("A1 closed-set re-ID top-1 (logreg)")
-    ax.set_xlim(0.20, max(p[3] for p in points) * 1.05)
-    ax.set_ylim(-0.02, 1.08)
+    max_x = max(p[3] for p in points)
+    max_y = max(p[2] for p in points)
+    ax.set_xlim(0.22, max_x + 0.012)
+    ax.set_ylim(-0.02, max(0.55, max_y + 0.08))
     ax.set_title("Privacy–utility Pareto across defense families (EEGNet victim)")
     # Legend anchored beneath the axes so the upper-right scatter region
     # (where the no-defense star and the worst-leaking D1 / Riemann
@@ -678,10 +697,10 @@ def render_a4_cross_dataset() -> None:
                  linewidth=0.5, width=0.45,
                  error_kw=dict(ecolor=PALETTE["ink"], elinewidth=1.0,
                                capsize=3.5, capthick=1.0))
-    ax.text(0, d["auc"] + err_hi + 0.042, f"{d['auc']:.3f}",
+    ax.text(0, d["auc"] + err_hi + 0.060, f"{d['auc']:.3f}",
             ha="center", va="bottom", fontsize=11.0,
             fontweight="bold", color=PALETTE["ink"])
-    ax.text(0, d["auc"] + err_hi + 0.022,
+    ax.text(0, d["auc"] + err_hi + 0.030,
             f"[{d['auc_ci_low']:.3f}, {d['auc_ci_high']:.3f}]",
             ha="center", va="bottom", fontsize=7.0,
             color=PALETTE["neutral"])
@@ -694,8 +713,7 @@ def render_a4_cross_dataset() -> None:
     ax.set_ylabel("A4 AUC (open-set verification)")
     ax.set_title(
         "A4 cross-dataset verification (PhysioNet → IV-2a, milestone)\n"
-        f"train: 80 PhysioNet subjects, test: 9 unseen IV-2a subjects, "
-        f"EER = {d['eer']:.3f}",
+        f"train n=80 PhysioNet · unseen n=9 IV-2a · EER = {d['eer']:.3f}",
         fontsize=10.0,
     )
     ax.legend(loc="upper right", fontsize=7.5)
@@ -719,13 +737,19 @@ def render_a4_multi_seed() -> None:
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
     seeds = [r["seed"] for r in per_seed]
-    aucs = [r["auc"] for r in per_seed]
+    aucs = np.asarray([r["auc"] for r in per_seed])
     bars = ax.bar(seeds, aucs, color=PALETTE["accent"],
                   edgecolor=PALETTE["ink"], linewidth=0.5, width=0.55)
-    for b, a in zip(bars, aucs):
-        _annotate_bar(ax, b.get_x() + b.get_width() / 2, a, fontsize=7.5)
     mean_auc = agg.get("auc_mean")
     std_auc = agg.get("auc_std")
+    # Push each bar label above its own bar AND above the mean dashed line
+    # so the two never visually intersect.
+    mean_for_label = mean_auc if mean_auc is not None else aucs.max()
+    for b, a in zip(bars, aucs):
+        y = max(a, mean_for_label) + 0.018
+        ax.text(b.get_x() + b.get_width() / 2, y, f"{a:.3f}",
+                ha="center", va="bottom", fontsize=7.5,
+                color=PALETTE["ink"])
     if mean_auc is not None:
         ax.axhline(mean_auc, color=PALETTE["contrast"], lw=1.0,
                    ls=(0, (4, 3)),
@@ -735,8 +759,8 @@ def render_a4_multi_seed() -> None:
     ax.set_xticks(seeds)
     ax.set_xlabel("Random seed")
     ax.set_ylabel("A4 AUC")
-    ax.set_ylim(0.50, 1.0)
-    ax.set_title("A4 PhysioNet multi-seed replication  "
+    ax.set_ylim(0.45, 1.02)
+    ax.set_title("A4 PhysioNet multi-seed replication "
                  "(5 random 80 / 24 splits, 24 unseen subjects each)")
     ax.legend(loc="lower right", fontsize=7.5)
     _maybe_grid(ax, "y")
@@ -772,8 +796,14 @@ def _adaptive_attacker_bar(*, json_path: Path, out_path: Path, title: str,
                   edgecolor=PALETTE["ink"], linewidth=0.5, width=0.55,
                   error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.9,
                                 capsize=3, capthick=0.9))
+    # Position bar value labels so they never collide with the dashed
+    # `baseline` reference line. If a bar's natural label position lands
+    # in the baseline's neighbourhood we lift it above the baseline.
     for b, v, h in zip(bars, top1, hi):
-        ax.text(b.get_x() + b.get_width() / 2, v + h + 0.022, f"{v:.3f}",
+        nat_y = v + h + 0.022
+        if abs(nat_y - baseline) < 0.04:
+            nat_y = baseline + 0.045
+        ax.text(b.get_x() + b.get_width() / 2, nat_y, f"{v:.3f}",
                 ha="center", va="bottom", fontsize=9.0,
                 fontweight="bold", color=PALETTE["ink"])
     ax.axhline(baseline, color=PALETTE["neutral"], lw=1.0,
@@ -854,18 +884,25 @@ def render_d1_adaptive_attacker() -> None:
                     label="encoder fine-tune (adaptive)",
                     error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.8,
                                   capsize=2.5, capthick=0.7))
-    for b, v in zip(bars_g, generic):
-        _annotate_bar(ax, b.get_x() + b.get_width() / 2, v, fontsize=7.0)
-    for b, v in zip(bars_a, adaptive):
-        _annotate_bar(ax, b.get_x() + b.get_width() / 2, v, fontsize=7.0)
     baseline = 0.411  # from A1 EEGNet logreg
+    def _safe_label(b, v, h):
+        nat_y = v + h + 0.012
+        if abs(nat_y - baseline) < 0.04:
+            nat_y = baseline + 0.045
+        ax.text(b.get_x() + b.get_width() / 2, nat_y, f"{v:.3f}",
+                ha="center", va="bottom", fontsize=7.0,
+                color=PALETTE["ink"])
+    for b, v, h in zip(bars_g, generic, g_hi):
+        _safe_label(b, v, h)
+    for b, v, h in zip(bars_a, adaptive, a_hi):
+        _safe_label(b, v, h)
     ax.axhline(baseline, color=PALETTE["neutral"], lw=1.0, ls=(0, (4, 3)),
                label=f"no-defense baseline ({baseline:.3f})")
     ax.set_xticks(x)
     ax.set_xticklabels([pretty_defense.get(d, d) for d in defenses])
     ax.set_ylabel("Re-ID top-1")
     ax.set_ylim(0, 1.0)
-    ax.set_title("D1 ad-hoc defenses under encoder fine-tune  (PhysioNet, n=104)")
+    ax.set_title("D1 ad-hoc defenses under encoder fine-tune (PhysioNet, n=104)")
     ax.legend(loc="upper left", fontsize=7.5)
     _maybe_grid(ax, "y")
     fig.savefig(FIGURES_DIR / "23_d1_adaptive_attacker.pdf")
@@ -963,7 +1000,7 @@ def render_dp_sgd_arch_ablation() -> None:
     ax.set_ylabel("A1 re-ID top-1 (logreg)")
     ax.set_ylim(0, max(0.55, (values + hi).max() * 1.40))
     ax.set_title(
-        "D3 architecture vs noise decomposition  "
+        "D3 architecture vs noise decomposition "
         "(EEGNet, PhysioNet n=104)"
     )
     ax.legend(loc="upper right", fontsize=7.5)
@@ -1046,7 +1083,7 @@ def render_subgroup_fairness() -> None:
     axes[1].legend(loc="lower left", fontsize=7.5)
     _maybe_grid(axes[1], "y")
 
-    fig.suptitle("W5.1 subgroup fairness  (PhysioNet, n=97 sex-known / 91 age-known)",
+    fig.suptitle("W5.1 subgroup fairness (PhysioNet, n=97 sex-known / 91 age-known)",
                  fontsize=10.5)
     fig.savefig(FIGURES_DIR / "12_subgroup_fairness.pdf")
     plt.close(fig)
@@ -1134,7 +1171,7 @@ def render_eegnet_age_seeds() -> None:
                           f"{age_diff_mean:+.3f} ± {age_diff_std:.3f}"))
     title = "EEGNet age effect across 5 seeds (PhysioNet, n=91 age-known)"
     if fisher_p is not None:
-        title += f"  ·  Fisher combined p = {fisher_p:.4f}"
+        title += f" · Fisher combined p = {fisher_p:.4f}"
     ax.set_xticks(seeds)
     ax.set_xlabel("Random seed")
     ax.set_ylabel(r"$\Delta$ attack acc.  (low − high)")
@@ -1263,19 +1300,22 @@ def render_dp_aware_mia() -> None:
                label=f"undefended baseline ({undefended:.3f})")
     ax.axhline(0.5, color=PALETTE["fail"], lw=0.7, ls=":",
                label="chance (AUC = 0.5)")
-    # Bar value labels: tuck them just inside the upper CI bar tail so
-    # they never clash with the legend or the baseline annotation.
-    for xi, v, h in zip(x, aucs, np.array([r["hi"] for r in rows])):
-        ax.text(xi, max(v + (h - v) + 0.025, 0.06), f"{v:.3f}",
+    # Bar value labels: always above whichever is higher — the upper CI
+    # cap or the Yeom point at that ε — so the Yeom line never visually
+    # cuts through the bold AUC number.
+    hi_arr = np.array([r["hi"] for r in rows])
+    for xi, v, h_v, y_v in zip(x, aucs, hi_arr, yeom):
+        y = max(h_v, y_v) + 0.035
+        ax.text(xi, y, f"{v:.3f}",
                 ha="center", va="bottom", fontsize=8.0,
                 color=PALETTE["ink"], fontweight="bold")
     ax.set_xticks(x)
     ax.set_xticklabels([f"ε = {r['eps_target']:g}" for r in rows])
     ax.set_xlabel("DP-SGD target ε  (shadows and target both DP-trained)")
     ax.set_ylabel("MI AUC")
-    ax.set_ylim(0, 1.10)
+    ax.set_ylim(0, 1.18)
     ax.set_title(
-        "DP-aware membership inference vs Yeom (2018) bound across ε  "
+        "DP-aware membership inference vs Yeom (2018) bound across ε "
         "(PhysioNet, EEGNet)"
     )
     ax.legend(loc="upper left", fontsize=7.5)
@@ -1301,16 +1341,27 @@ def render_model_inversion() -> None:
     chance1 = 1.0 / d["results"][arms[0]]["n_subjects"]
     chance5 = 5.0 / d["results"][arms[0]]["n_subjects"]
 
-    ax.bar(x - width / 2, rank1, width, color=PALETTE["accent"],
+    # Draw rank-1 bars; when the value is exactly zero a normal bar is
+    # invisible, so leave a thin hatched stub above the axis so a reader
+    # can tell the experiment ran and produced a null. The stub never
+    # affects the y-scale because it sits inside the existing axis pad.
+    rank1_visible = [max(v, 0.0) for v in rank1]
+    ax.bar(x - width / 2, rank1_visible, width, color=PALETTE["accent"],
            edgecolor=PALETTE["ink"], linewidth=0.5, label="rank-1 recovery")
     ax.bar(x + width / 2, rank5, width, color=PALETTE["contrast"],
            edgecolor=PALETTE["ink"], linewidth=0.5, label="rank-5 recovery")
+    for xi, v in zip(x - width / 2, rank1):
+        if v == 0:
+            ax.bar(xi, 0.004, width, bottom=0.0,
+                   color=PALETTE["accent"], edgecolor=PALETTE["ink"],
+                   linewidth=0.5, hatch="///", alpha=0.55)
     ax.axhline(chance1, color=PALETTE["neutral"], lw=0.7, ls=":",
                label=f"rank-1 chance ({chance1:.3f})")
     ax.axhline(chance5, color=PALETTE["neutral"], lw=0.7, ls=(0, (4, 3)),
                label=f"rank-5 chance ({chance5:.3f})")
     for xi, v in zip(x - width / 2, rank1):
-        _annotate_bar(ax, xi, v, fontsize=7.0)
+        _annotate_bar(ax, xi, max(v, 0.004), fontsize=7.0,
+                      text=f"{v:.3f}")
     for xi, v in zip(x + width / 2, rank5):
         _annotate_bar(ax, xi, v, fontsize=7.0)
 
@@ -1321,7 +1372,7 @@ def render_model_inversion() -> None:
     ax.set_ylim(0, max(0.30, max(rank5) + 0.10))
     ax.set_ylabel("Reconstruction recovery rate")
     ax.set_title(
-        f"Fredrikson model inversion null result  "
+        f"Fredrikson model inversion null result "
         f"(n={d['n_targets']} target subjects, "
         f"{d['n_inversion_steps']} optimisation steps)"
     )
@@ -1386,7 +1437,7 @@ def render_eps_sweep() -> None:
     _maybe_grid(ax_r, "y")
 
     fig.suptitle(
-        "D3 DP-SGD ε sweep on PhysioNet (n=104, EEGNet victim):  "
+        "D3 DP-SGD ε sweep on PhysioNet (EEGNet victim, n=104)\n"
         "generic and adaptive attackers; task accuracy",
         fontsize=10.5,
     )
@@ -1485,7 +1536,7 @@ def render_theory_scaling() -> None:
                   fontsize=9, color=PALETTE["neutral"])
         ax_r.axis("off")
 
-    fig.suptitle("Theoretical scaling validation  (experiment 30)",
+    fig.suptitle("Theoretical scaling validation (experiment 30)",
                  fontsize=10.5)
     fig.savefig(FIGURES_DIR / "30_theory_scaling.pdf")
     plt.close(fig)
@@ -1524,10 +1575,15 @@ def render_federated_dp() -> None:
     ax.set_ylabel("Re-ID top-1")
     ax.set_ylim(0, 0.50)
     ax.set_title(
-        f"D4 federated DP-FedAvg  ·  104 clients, 30 rounds, q=0.5, "
-        f"σ=0.4  ·  participant-level ε (RDP) = {eps:.1f}"
+        f"D4 federated DP-FedAvg (104 clients, 30 rounds, q=0.5, σ=0.4)\n"
+        f"participant-level ε (RDP) = {eps:.1f}"
     )
-    ax.legend(loc="upper right", fontsize=7.5)
+    # Anchor the legend beneath the axes so it never lands on top of the
+    # horizontal no-defense baseline dashed line, which sweeps the upper
+    # half of the plot.
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              fontsize=7.5, ncol=2, frameon=False,
+              columnspacing=1.6, handletextpad=0.6)
     _maybe_grid(ax, "y")
     fig.savefig(FIGURES_DIR / "31_federated_dp.pdf")
     plt.close(fig)
@@ -1601,7 +1657,7 @@ def render_lee2019_fairness() -> None:
         ax.legend(loc="upper left", fontsize=7.5)
         _maybe_grid(ax, "y" if not ceiling else "x")
     fig.suptitle(
-        "Lee 2019 within-cohort heterogeneity  "
+        "Lee 2019 within-cohort heterogeneity "
         "(54 subjects, within-session protocol)",
         fontsize=10.5,
     )
@@ -1626,8 +1682,15 @@ def render_asymmetry_mechanism() -> None:
                   edgecolor=PALETTE["ink"], linewidth=0.5, width=0.55,
                   error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.9,
                                 capsize=3, capthick=0.9))
-    for b, v in zip(bars, values):
-        _annotate_bar(ax, b.get_x() + b.get_width() / 2, v, fontsize=8.5)
+    # Both arms sit on or just above chance — lift each annotation above
+    # the chance dashed line so the number is never bisected by it.
+    for b, v, h in zip(bars, values, err_hi):
+        nat_y = v + h + 0.020
+        if abs(nat_y - 0.5) < 0.04:
+            nat_y = 0.5 + 0.045
+        ax.text(b.get_x() + b.get_width() / 2, nat_y, f"{v:.3f}",
+                ha="center", va="bottom", fontsize=8.5,
+                color=PALETTE["ink"])
     ax.axhline(0.5, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)),
                label="chance (AUC = 0.5)")
     ax.set_ylabel("Lee 2019 → PhysioNet A4 AUC")
@@ -1636,8 +1699,8 @@ def render_asymmetry_mechanism() -> None:
     hyp = d.get("hypothesis_supported", False)
     verdict = "supported" if hyp else "falsified"
     ax.set_title(
-        f"Lee 2019 → PhysioNet asymmetry-mechanism test  ·  "
-        f"task-complexity hypothesis: {verdict}  ·  lift = {lift:+.3f}"
+        f"Lee 2019 → PhysioNet asymmetry-mechanism test\n"
+        f"task-complexity hypothesis: {verdict} · lift = {lift:+.3f}"
     )
     ax.legend(loc="upper right", fontsize=7.5)
     _maybe_grid(ax, "y")
@@ -1690,8 +1753,14 @@ def render_multi_seed() -> None:
             edgecolor=PALETTE["ink"], linewidth=0.5, height=0.6,
             error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.9,
                           capsize=3, capthick=0.9))
+    # If a text label would land within ±0.02 of the chance line (x=0.5)
+    # nudge it past the line so the dashed reference never bisects the
+    # "mean ± std" string.
     for i, (m, s, n) in enumerate(zip(means, stds, [r[3] for r in rows])):
-        ax.text(min(1.005, m + s + 0.005), i,
+        x = m + s + 0.008
+        if 0.48 < x < 0.54:
+            x = 0.55
+        ax.text(min(1.005, x), i,
                 f"{m:.3f} ± {s:.3f}  (n={n})",
                 va="center", fontsize=7.5, color=PALETTE["ink"])
     ax.axvline(0.5, color=PALETTE["neutral"], lw=0.7, ls=(0, (4, 3)),
@@ -1700,7 +1769,7 @@ def render_multi_seed() -> None:
     ax.set_xlabel("metric value  (mean ± std across 5 seeds)")
     ax.set_xlim(0, max(1.0, (means + stds).max() + 0.08))
     ax.set_title(
-        "Tier-1 multi-seed replication  (5 seeds per row, experiment 34)"
+        "Tier-1 multi-seed replication (5 seeds per row, experiment 34)"
     )
     ax.legend(loc="lower right", fontsize=7.5)
     _maybe_grid(ax, "x")

@@ -352,7 +352,10 @@ def closed_set_bar_chart(
     ax.set_xticklabels([_pretty_victim(v) for v in victims])
     ax.set_ylabel("Re-identification top-1 accuracy")
     upper = max(1.10, max_y + 0.06)
-    ax.set_ylim(0, upper)
+    # Drop the lower edge just below 0 so a chance line at very small
+    # values (e.g. 1/104 ≈ 0.010) sits clearly inside the plot box and
+    # the dashed pattern is not clipped against the bottom spine.
+    ax.set_ylim(-0.02, upper)
     if title:
         ax.set_title(title)
     # Anchor legend below the axes to guarantee it never collides with
@@ -486,32 +489,33 @@ def verification_summary_card(
     ax.set_xticklabels(xticklabels)
     ax.set_xlim(-0.55, 1.55 if has_multi else 0.55)
 
-    # Y-limits: leave headroom above the bar / dots for value annotations.
+    # Y-limits: leave enough headroom above the upper CI cap to fit both
+    # the gray CI bracket and the bold AUC numeral, and ensure the chance
+    # line stays clearly inside the box rather than flush with the spine.
     top_data = max(auc + err_hi, max(extra_seeds) if has_multi else auc + err_hi)
-    bottom = min(chance - 0.04, auc_ci_low - 0.05)
-    ax.set_ylim(bottom, max(top_data + 0.10, 1.02))
+    bottom = min(chance - 0.06, auc_ci_low - 0.05)
+    ax.set_ylim(bottom, max(top_data + 0.18, 1.05))
     ax.set_ylabel("AUC")
 
-    # Value annotation: AUC numerals bold above the bar; CI bracket as a
-    # smaller line just beneath the value (i.e. between the value and
-    # the upper error-cap tick). Both sit ABOVE the bar's upper CI cap.
-    label_y = auc + err_hi + 0.012
-    ax.text(0, label_y + 0.030, f"{auc:.3f}",
+    # Value annotation: bold AUC numeral above the bar with the CI bracket
+    # tucked between it and the upper error-cap. Generous vertical spacing
+    # so the bracket characters never touch the bold value or the cap.
+    ci_y = auc + err_hi + 0.030
+    value_y = ci_y + 0.070
+    ax.text(0, value_y, f"{auc:.3f}",
             ha="center", va="bottom", fontsize=11.0,
             fontweight="bold", color=PALETTE["ink"])
-    ax.text(0, label_y, f"[{auc_ci_low:.3f}, {auc_ci_high:.3f}]",
+    ax.text(0, ci_y, f"[{auc_ci_low:.3f}, {auc_ci_high:.3f}]",
             ha="center", va="bottom", fontsize=7.0,
             color=PALETTE["neutral"])
 
-    # Title is the only header; cohort details belong in the figure
-    # caption (kept off-figure to avoid stacking text above the title).
+    # Title carries the full cohort line so the subtitle never duplicates
+    # the "X unseen subjects" string from the calling renderer.
     if title:
         ax.set_title(
             f"{title}\n"
-            r"\textit{}".replace(r"\textit{}", "")
-            + f"trained on {n_train_subjects} subjects, "
-              f"{n_test_subjects} unseen, {n_pairs:,} pairs, "
-              f"EER = {eer:.3f}",
+            f"train n={n_train_subjects} · unseen n={n_test_subjects} · "
+            f"{n_pairs:,} pairs · EER = {eer:.3f}",
             fontsize=10.0,
         )
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18),
