@@ -821,6 +821,11 @@ def render_d1_adaptive_attacker() -> None:
     defenses = list(pivoted.keys())
     if not defenses:
         return
+    pretty_defense = {
+        "pca_k8":            "D1 PCA  (k=8)",
+        "noise_sigma1.0":    "D1 noise  (σ=1.0)",
+        "channel_drop_k8":   "D1 channel-drop  (k=8)",
+    }
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=FIG_DOUBLE_TALL)
     width = 0.36
@@ -857,7 +862,7 @@ def render_d1_adaptive_attacker() -> None:
     ax.axhline(baseline, color=PALETTE["neutral"], lw=1.0, ls=(0, (4, 3)),
                label=f"no-defense baseline ({baseline:.3f})")
     ax.set_xticks(x)
-    ax.set_xticklabels(defenses, rotation=15, ha="right")
+    ax.set_xticklabels([pretty_defense.get(d, d) for d in defenses])
     ax.set_ylabel("Re-ID top-1")
     ax.set_ylim(0, 1.0)
     ax.set_title("D1 ad-hoc defenses under encoder fine-tune  (PhysioNet, n=104)")
@@ -869,51 +874,94 @@ def render_d1_adaptive_attacker() -> None:
 
 
 def render_dp_sgd_arch_ablation() -> None:
-    p = RESULTS_DIR / "19_dp_sgd_arch_ablation.json"
-    if not p.exists():
-        return
-    rows = json.loads(p.read_text())
-    # The JSON is a flat list of {configuration, probe, top1, ...} -- keep
-    # only the logreg-probe runs and add the milestone-era AdamW+BN A1
-    # baseline (0.411) for the comparison plot, since that configuration
-    # is not retrained inside this experiment.
-    rows_lr = [r for r in rows if r.get("probe") == "logreg"]
-    if not rows_lr:
-        return
-    pretty = {
-        "groupnorm_sgd_no_dp":     "SGD + GroupNorm\n(no DP)",
-        "groupnorm_sgd_dp_eps3":   "SGD + GroupNorm\n+ DP-SGD ε = 3",
-    }
-    labels = ["AdamW + BatchNorm\n(vanilla A1)"] + [
-        pretty.get(r["configuration"], r["configuration"]) for r in rows_lr
+    """D3 architecture-vs-noise decomposition. Combines three sources:
+
+      1. AdamW + BatchNorm baseline = the A1 EEGNet logreg result
+         (results/02_closed_set_reid.json, hard-coded as 0.411 here
+         to match the milestone-era number).
+      2. SGD + GroupNorm, no DP -- the milestone's experiment 19, which
+         retrains the architecture-equivalent Opacus stack with the
+         PrivacyEngine bypassed (target_epsilon = None).
+      3. SGD + GroupNorm + DP-SGD ε = 3 -- the milestone's
+         experiment 10 ε=3 logreg row (results/10_d3_dp_sgd.json).
+
+    Plotting all three side by side surfaces the milestone finding that
+    the architectural change (BN→GN, AdamW→SGD) accounts for ~89% of
+    the empirical privacy and the formal DP mechanism adds only ~5% on
+    top.
+    """
+    p19 = RESULTS_DIR / "19_dp_sgd_arch_ablation.json"
+    p10 = RESULTS_DIR / "10_d3_dp_sgd.json"
+    rows19 = json.loads(p19.read_text()) if p19.exists() else []
+    rows10 = json.loads(p10.read_text()) if p10.exists() else []
+
+    def _logreg_eps3():
+        for r in rows10:
+            if (r.get("probe") == "logreg"
+                    and r.get("target_epsilon") == 3.0):
+                return r
+        return None
+
+    no_dp = next((r for r in rows19
+                  if r.get("probe") == "logreg"
+                  and r.get("configuration") == "groupnorm_sgd_no_dp"),
+                 None)
+    dp_eps3 = _logreg_eps3()
+
+    rows = [
+        ("AdamW + BatchNorm\n(vanilla A1)", 0.411, 0.0, 0.0, PALETTE["fail"]),
     ]
-    values = np.array([0.411] + [r["top1"] for r in rows_lr])
-    lo = np.array([0.0] + [r["top1"] - r["top1_ci_low"] for r in rows_lr])
-    hi = np.array([0.0] + [r["top1_ci_high"] - r["top1"] for r in rows_lr])
-    yerr = [list(values - (values - lo)), list(hi)]  # match signature
+    if no_dp is not None:
+        rows.append((
+            "SGD + GroupNorm\n(no DP)",
+            no_dp["top1"],
+            no_dp["top1"] - no_dp["top1_ci_low"],
+            no_dp["top1_ci_high"] - no_dp["top1"],
+            PALETTE["warn"],
+        ))
+    if dp_eps3 is not None:
+        rows.append((
+            "SGD + GroupNorm +\nDP-SGD ε = 3",
+            dp_eps3["top1"],
+            dp_eps3["top1"] - dp_eps3["top1_ci_low"],
+            dp_eps3["top1_ci_high"] - dp_eps3["top1"],
+            PALETTE["ok"],
+        ))
+    if len(rows) < 2:
+        return
+
+    labels = [r[0] for r in rows]
+    values = np.array([r[1] for r in rows])
+    lo = np.array([r[2] for r in rows])
+    hi = np.array([r[3] for r in rows])
+    colors = [r[4] for r in rows]
+
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=FIG_DOUBLE)
-    bars = ax.bar(labels, values,
-                  yerr=[lo, hi],
-                  color=[PALETTE["fail"], PALETTE["warn"], PALETTE["ok"]][: len(labels)],
-                  edgecolor=PALETTE["ink"], linewidth=0.5, width=0.5,
+    bars = ax.bar(labels, values, yerr=[lo, hi], color=colors,
+                  edgecolor=PALETTE["ink"], linewidth=0.5, width=0.55,
                   error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.9,
                                 capsize=3, capthick=0.9))
-    for b, v in zip(bars, values):
-        _annotate_bar(ax, b.get_x() + b.get_width() / 2, v, fontsize=8.0)
-    # Δ annotations between consecutive bars
+    for b, v, h in zip(bars, values, hi):
+        ax.text(b.get_x() + b.get_width() / 2, v + h + 0.016, f"{v:.3f}",
+                ha="center", va="bottom", fontsize=9.0,
+                fontweight="bold", color=PALETTE["ink"])
+
+    # Δ annotations between consecutive bars, drawn high enough to clear
+    # the bar value labels.
     for i in range(1, len(values)):
         delta = values[i] - values[i - 1]
         sign = "+" if delta >= 0 else ""
         midpoint = (bars[i - 1].get_x() + bars[i - 1].get_width() / 2
                     + bars[i].get_x() + bars[i].get_width() / 2) / 2
-        ax.text(midpoint, max(values[i - 1], values[i]) + 0.05,
+        y_anchor = max(values[i - 1] + hi[i - 1], values[i] + hi[i]) + 0.075
+        ax.text(midpoint, y_anchor,
                 f"Δ = {sign}{delta:.3f}", ha="center", va="bottom",
-                fontsize=7.0, color=PALETTE["neutral"], style="italic")
+                fontsize=8.0, color=PALETTE["neutral"], style="italic")
     ax.axhline(0.411, color=PALETTE["neutral"], lw=0.7, ls=":",
                label="AdamW + BN A1 baseline")
     ax.set_ylabel("A1 re-ID top-1 (logreg)")
-    ax.set_ylim(0, max(0.55, values.max() * 1.30))
+    ax.set_ylim(0, max(0.55, (values + hi).max() * 1.40))
     ax.set_title(
         "D3 architecture vs noise decomposition  "
         "(EEGNet, PhysioNet n=104)"
@@ -1089,7 +1137,7 @@ def render_eegnet_age_seeds() -> None:
         title += f"  ·  Fisher combined p = {fisher_p:.4f}"
     ax.set_xticks(seeds)
     ax.set_xlabel("Random seed")
-    ax.set_ylabel(r"$\Delta$ attack acc.  (low − high age tertile)")
+    ax.set_ylabel(r"$\Delta$ attack acc.  (low − high)")
     valid = [v for v in deltas if not np.isnan(v)]
     if valid:
         ax.set_ylim(min(0, min(valid) - 0.02), max(valid) + 0.05)
@@ -1492,10 +1540,10 @@ def render_lee2019_fairness() -> None:
         return
     d = json.loads(p.read_text())
     plt.rcParams.update(journal_style())
-    # Wider canvas so each panel has enough horizontal room for its
-    # two-line title (victim name + task / decile-gap annotation) without
-    # bleeding into the neighbouring panel.
-    fig, axes = plt.subplots(1, 3, figsize=(8.2, 3.6), sharey=True)
+    # Each panel gets its own y-axis so a ceiling-saturated Riemann
+    # (54 subjects in a single bin) is not clipped by FBCSP / EEGNet's
+    # ~10-bar max.
+    fig, axes = plt.subplots(1, 3, figsize=(8.4, 3.6), sharey=False)
     color_for = {"fbcsp": PALETTE["accent"], "riemann": PALETTE["contrast"],
                  "eegnet": PALETTE["ok"]}
     title_for = {"fbcsp": "FBCSP + LDA",
@@ -1507,17 +1555,41 @@ def render_lee2019_fairness() -> None:
         v = d["victim_results"][victim]
         h = v["heterogeneity"]
         per_subj = v.get("per_subject_accuracy") or {}
-        if per_subj:
-            accs = np.array(list(per_subj.values()))
+        accs = (np.array(list(per_subj.values())) if per_subj
+                else np.array([h["min"], h["mean"], h["max"]]))
+
+        ceiling = bool(h["decile_gap"] < 1e-3 and h["max"] >= 0.99)
+        if ceiling:
+            # All subjects at top-1 ≈ 1 -- a histogram degenerates into a
+            # single near-invisible spike. Show the cluster explicitly:
+            # a strip plot of per-subject values along a horizontal axis
+            # plus a textual ceiling annotation, which mirrors what the
+            # theory panel does for Riemann at ceiling.
+            rng = np.random.default_rng(0)
+            jit = rng.uniform(-0.18, 0.18, size=len(accs))
+            ax.scatter(accs, np.zeros_like(accs) + jit,
+                       color=color_for[victim], edgecolor=PALETTE["ink"],
+                       linewidth=0.4, s=36, alpha=0.85, zorder=3)
+            ax.axvline(h["mean"], color=PALETTE["ink"], lw=1.1,
+                       label=f"mean {h['mean']:.3f}")
+            ax.set_yticks([])
+            ax.set_ylim(-1.0, 1.0)
+            ax.text(0.5, 0.92,
+                    f"all {len(accs)} subjects at top-1 ≥ {h['min']:.3f}",
+                    transform=ax.transAxes,
+                    ha="center", va="top", fontsize=8.0,
+                    color=PALETTE["neutral"], style="italic")
         else:
-            # If for some reason per-subject data is absent, fall back to
-            # plotting min/mean/max -- but make it visible (the prior
-            # version produced three near-invisible bars).
-            accs = np.array([h["min"], h["mean"], h["max"]])
-        ax.hist(accs, bins=14, color=color_for[victim],
-                edgecolor=PALETTE["ink"], linewidth=0.4, alpha=0.85)
-        ax.axvline(h["mean"], color=PALETTE["ink"], lw=1.1,
-                   label=f"mean {h['mean']:.3f}")
+            ax.hist(accs, bins=14, color=color_for[victim],
+                    edgecolor=PALETTE["ink"], linewidth=0.4, alpha=0.85)
+            ax.axvline(h["mean"], color=PALETTE["ink"], lw=1.1,
+                       label=f"mean {h['mean']:.3f}")
+            ax.set_ylabel(("Subject count  (n=54)" if victim == "fbcsp"
+                           else "Subject count"))
+            # leave headroom so the mean line label doesn't clash with
+            # the tallest bar
+            _, top = ax.get_ylim()
+            ax.set_ylim(0, top * 1.12)
         ax.set_title(
             f"{title_for[victim]}\n"
             f"task = {v['task_acc']:.3f}, "
@@ -1526,10 +1598,8 @@ def render_lee2019_fairness() -> None:
         )
         ax.set_xlim(0, 1.05)
         ax.set_xlabel("Per-subject A1 top-1")
-        if victim == "fbcsp":
-            ax.set_ylabel("Subject count  (n=54)")
         ax.legend(loc="upper left", fontsize=7.5)
-        _maybe_grid(ax, "y")
+        _maybe_grid(ax, "y" if not ceiling else "x")
     fig.suptitle(
         "Lee 2019 within-cohort heterogeneity  "
         "(54 subjects, within-session protocol)",
