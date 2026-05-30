@@ -1,22 +1,101 @@
 {
   "n_subjects_available": 104,
-  "cohort_grid": [10, 20, 40, 60, 80, 104],
+  "cohort_grid": [
+    10,
+    20,
+    40,
+    60,
+    80,
+    104
+  ],
   "scaling": {
     "eegnet": [
-      {"n": 10,  "top1": 0.8333333333333334, "ci_low": 0.7994166666666667, "ci_high": 0.8677777777777778, "chance": 0.1},
-      {"n": 20,  "top1": 0.7016666666666667, "ci_low": 0.6749722222222222, "ci_high": 0.7294444444444445, "chance": 0.05},
-      {"n": 40,  "top1": 0.5536111111111112, "ci_low": 0.5319444444444444, "ci_high": 0.5740347222222223, "chance": 0.025},
-      {"n": 60,  "top1": 0.5225925925925926, "ci_low": 0.5051851851851852, "ci_high": 0.5386157407407407, "chance": 0.016666666666666666},
-      {"n": 80,  "top1": 0.44583333333333336, "ci_low": 0.4315208333333333, "ci_high": 0.46174652777777775, "chance": 0.0125},
-      {"n": 104, "top1": 0.41025641025641024, "ci_low": 0.3973290598290598, "ci_high": 0.42362179487179485, "chance": 0.009615384615384616}
+      {
+        "n": 10,
+        "top1": 0.8333333333333334,
+        "ci_low": 0.7994166666666667,
+        "ci_high": 0.8677777777777778,
+        "chance": 0.1
+      },
+      {
+        "n": 20,
+        "top1": 0.7016666666666667,
+        "ci_low": 0.6749722222222222,
+        "ci_high": 0.7294444444444445,
+        "chance": 0.05
+      },
+      {
+        "n": 40,
+        "top1": 0.5536111111111112,
+        "ci_low": 0.5319444444444444,
+        "ci_high": 0.5740347222222223,
+        "chance": 0.025
+      },
+      {
+        "n": 60,
+        "top1": 0.5225925925925926,
+        "ci_low": 0.5051851851851852,
+        "ci_high": 0.5386157407407407,
+        "chance": 0.016666666666666666
+      },
+      {
+        "n": 80,
+        "top1": 0.44583333333333336,
+        "ci_low": 0.4315208333333333,
+        "ci_high": 0.46174652777777775,
+        "chance": 0.0125
+      },
+      {
+        "n": 104,
+        "top1": 0.41025641025641024,
+        "ci_low": 0.3973290598290598,
+        "ci_high": 0.42362179487179485,
+        "chance": 0.009615384615384616
+      }
     ],
     "riemann": [
-      {"n": 10,  "top1": 1.0,                "ci_low": 1.0,                "ci_high": 1.0,                "chance": 0.1},
-      {"n": 20,  "top1": 1.0,                "ci_low": 1.0,                "ci_high": 1.0,                "chance": 0.05},
-      {"n": 40,  "top1": 1.0,                "ci_low": 1.0,                "ci_high": 1.0,                "chance": 0.025},
-      {"n": 60,  "top1": 1.0,                "ci_low": 1.0,                "ci_high": 1.0,                "chance": 0.016666666666666666},
-      {"n": 80,  "top1": 0.9995833333333334, "ci_low": 0.9988888888888889, "ci_high": 1.0,                "chance": 0.0125},
-      {"n": 104, "top1": 1.0,                "ci_low": 1.0,                "ci_high": 1.0,                "chance": 0.009615384615384616}
+      {
+        "n": 10,
+        "top1": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "chance": 0.1
+      },
+      {
+        "n": 20,
+        "top1": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "chance": 0.05
+      },
+      {
+        "n": 40,
+        "top1": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "chance": 0.025
+      },
+      {
+        "n": 60,
+        "top1": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "chance": 0.016666666666666666
+      },
+      {
+        "n": 80,
+        "top1": 0.9995833333333334,
+        "ci_low": 0.9988888888888889,
+        "ci_high": 1.0,
+        "chance": 0.0125
+      },
+      {
+        "n": 104,
+        "top1": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "chance": 0.009615384615384616
+      }
     ]
   },
   "scaling_fits": {
@@ -31,11 +110,56 @@
     }
   },
   "yeom_overlay": [
-    {"target_epsilon": 0.5, "final_epsilon": 0.4953, "yeom_bound_re_id_upper": 0.391, "empirical_logreg_top1": 0.027, "empirical_finetune_top1": 0.043, "task_acc": 0.251, "gap_logreg": 0.363, "gap_finetune": 0.347},
-    {"target_epsilon": 1.0, "final_epsilon": 0.998, "yeom_bound_re_id_upper": 0.631, "empirical_logreg_top1": 0.025, "empirical_finetune_top1": 0.070, "task_acc": 0.253, "gap_logreg": 0.606, "gap_finetune": 0.561},
-    {"target_epsilon": 3.0, "final_epsilon": 2.996, "yeom_bound_re_id_upper": 0.950, "empirical_logreg_top1": 0.030, "empirical_finetune_top1": 0.136, "task_acc": 0.293, "gap_logreg": 0.920, "gap_finetune": 0.814},
-    {"target_epsilon": 10.0, "final_epsilon": 9.992, "yeom_bound_re_id_upper": 1.000, "empirical_logreg_top1": 0.033, "empirical_finetune_top1": 0.189, "task_acc": 0.301, "gap_logreg": 0.967, "gap_finetune": 0.811},
-    {"target_epsilon": null, "final_epsilon": null, "yeom_bound_re_id_upper": 1.0, "empirical_logreg_top1": 0.032, "empirical_finetune_top1": 0.153, "task_acc": 0.308, "gap_logreg": 0.968, "gap_finetune": 0.847}
+    {
+      "target_epsilon": 0.5,
+      "final_epsilon": 0.4953,
+      "yeom_bound_re_id_upper": 0.391,
+      "empirical_logreg_top1": 0.027,
+      "empirical_finetune_top1": 0.043,
+      "task_acc": 0.251,
+      "gap_logreg": 0.363,
+      "gap_finetune": 0.347
+    },
+    {
+      "target_epsilon": 1.0,
+      "final_epsilon": 0.998,
+      "yeom_bound_re_id_upper": 0.631,
+      "empirical_logreg_top1": 0.025,
+      "empirical_finetune_top1": 0.07,
+      "task_acc": 0.253,
+      "gap_logreg": 0.606,
+      "gap_finetune": 0.561
+    },
+    {
+      "target_epsilon": 3.0,
+      "final_epsilon": 2.996,
+      "yeom_bound_re_id_upper": 0.95,
+      "empirical_logreg_top1": 0.03,
+      "empirical_finetune_top1": 0.136,
+      "task_acc": 0.293,
+      "gap_logreg": 0.92,
+      "gap_finetune": 0.814
+    },
+    {
+      "target_epsilon": 10.0,
+      "final_epsilon": 9.992,
+      "yeom_bound_re_id_upper": 1.0,
+      "empirical_logreg_top1": 0.033,
+      "empirical_finetune_top1": 0.189,
+      "task_acc": 0.301,
+      "gap_logreg": 0.967,
+      "gap_finetune": 0.811
+    },
+    {
+      "target_epsilon": null,
+      "final_epsilon": null,
+      "yeom_bound_re_id_upper": 1.0,
+      "empirical_logreg_top1": 0.032,
+      "empirical_finetune_top1": 0.153,
+      "task_acc": 0.308,
+      "gap_logreg": 0.968,
+      "gap_finetune": 0.847
+    }
   ],
   "predictions": {
     "P1_eegnet_gamma_in_0_9_to_1_2": {

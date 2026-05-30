@@ -1,6 +1,6 @@
 {
   "target_epsilon": 3.0,
-  "dp_final_epsilon": 2.9942982645075857,
+  "dp_final_epsilon": 2.9942982645075835,
   "n_victim_subjects": 80,
   "n_reference_subjects": 24,
   "n_targets": 10,
@@ -11,30 +11,52 @@
       "n_reconstructions": 10,
       "n_target_real": 14400,
       "n_other_real": 14400,
-      "median_sim_to_target": 0.271906740963459,
-      "median_sim_to_other": 0.31010450422763824,
+      "median_sim_to_target": 0.2853381484746933,
+      "median_sim_to_other": 0.30921943485736847,
       "advantage_top1_recovery": -0.0125,
       "advantage_top5_recovery": 0.037500000000000006,
       "rank1_acc": 0.0,
       "rank5_acc": 0.1,
-      "wall_seconds": 16.12902045249939,
+      "wall_seconds": 16.371217727661133,
       "victim": "no_defense",
-      "target_subjects": [9, 37, 41, 45, 56, 58, 73, 94, 105, 108]
+      "target_subjects": [
+        9,
+        37,
+        41,
+        45,
+        56,
+        58,
+        73,
+        94,
+        105,
+        108
+      ]
     },
     "dp_eps=3.0": {
       "n_subjects": 80,
       "n_reconstructions": 10,
       "n_target_real": 14400,
       "n_other_real": 14400,
-      "median_sim_to_target": 0.43568457663059235,
-      "median_sim_to_other": 0.3660639226436615,
+      "median_sim_to_target": 0.5191337317228317,
+      "median_sim_to_other": 0.4133418947458267,
       "advantage_top1_recovery": -0.0125,
       "advantage_top5_recovery": 0.037500000000000006,
       "rank1_acc": 0.0,
       "rank5_acc": 0.1,
-      "wall_seconds": 15.530050039291382,
+      "wall_seconds": 15.676275968551636,
       "victim": "dp_eps=3.0",
-      "target_subjects": [9, 37, 41, 45, 56, 58, 73, 94, 105, 108]
+      "target_subjects": [
+        9,
+        37,
+        41,
+        45,
+        56,
+        58,
+        73,
+        94,
+        105,
+        108
+      ]
     }
   }
 }
