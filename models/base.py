@@ -2,8 +2,9 @@
 
 Attacks operate on the model's *internal embedding* — the penultimate-layer
 features for EEGNet, the CSP-projected log-variances for FBCSP, the
-tangent-space-mapped covariances for Riemannian MDM. Each victim wraps
-itself behind a single `embed()` method so attack code stays generic.
+tangent-space-mapped covariances for the Riemannian tangent-space + logistic
+regression decoder. Each victim wraps itself behind a single `embed()` method
+so attack code stays generic.
 """
 from __future__ import annotations
 

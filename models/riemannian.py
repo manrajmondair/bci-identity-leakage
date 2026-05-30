@@ -11,6 +11,15 @@ The standard pipeline:
 For attacks the embedding is the tangent-space vector. That's the
 geometrically natural "feature" an attacker would extract.
 
+Note on the near-perfect re-ID this decoder produces: a per-window channel
+covariance matrix is an extremely stable per-subject signature (it encodes
+the individual head/electrode geometry and resting spectral profile), so
+100% closed-set re-ID is expected and matches prior work (Maciel et al.
+2021). It is NOT an artefact of train/test overlap: the A-series re-ID
+evaluations always split on DISJOINT trials (and, for A3, disjoint
+recording sessions), and CIs use the trial-grouped bootstrap, so no window
+or trial appears in both the probe-train and probe-test sets.
+
 Reference: Barachant et al., "Multiclass Brain-Computer Interface
 Classification by Riemannian Geometry", IEEE TBME 2012.
 """
