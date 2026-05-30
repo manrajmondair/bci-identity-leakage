@@ -187,7 +187,7 @@ def main() -> None:
                 std_lo=std_lo, std_hi=std_hi,
                 input_scale=1e6,
                 n_steps=args.n_inversion_steps, lr=0.05,
-                weight_decay=1e-3, device=device, seed=args.seed + int(k),
+                weight_decay=0.0, device=device, seed=args.seed + int(k),
             )
             reconstructions[int(k)] = x_star.squeeze(0).cpu()
         # Eval: how well does the reference embedder identify each x*_k?
