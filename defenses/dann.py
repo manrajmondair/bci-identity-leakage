@@ -5,13 +5,16 @@ EEGNet backbone + two heads:
   - subject head: predicts subject ID (104-way), connected to the
                   encoder via a Gradient Reversal Layer (GRL)
 
-Loss = L_task(task_logits, y_task) + λ · L_subj(subj_logits, y_subj)
+Loss = L_task(task_logits, y_task) + L_subj(subj_logits, y_subj)
 
-GRL flips the sign of the encoder's gradient on the subject loss path,
-so the encoder is encouraged to produce features that are simultaneously
-USEFUL for the task and USELESS for subject identification. λ controls
-the strength of the adversarial pressure: λ=0 reduces to vanilla EEGNet
-(= A1 baseline); λ ≫ 0 trades task accuracy for subject invariance.
+The Gradient Reversal Layer (GRL) multiplies the ENCODER's gradient on
+the subject-loss path by -λ; the two loss terms are then summed with unit
+weight. So the subject head trains at full strength while the encoder
+feels adversarial pressure of exactly λ — canonical DANN. (Applying λ a
+second time as a loss coefficient, as an earlier version did, makes the
+encoder feel λ² and mis-scales the whole λ-sweep.) λ controls the
+adversarial strength: λ=0 reduces to vanilla EEGNet (= A1 baseline);
+λ ≫ 0 trades task accuracy for subject invariance.
 
 Reference: Ganin et al. "Domain-Adversarial Training of Neural
 Networks", JMLR 2016 (arXiv:1505.07818).
@@ -150,10 +153,12 @@ class DANNVictim(VictimModel):
         return net
 
     def _iter_batches(self, X: np.ndarray, y_task: np.ndarray | None,
-                      y_subj: np.ndarray | None, shuffle: bool):
+                      y_subj: np.ndarray | None, shuffle: bool, epoch: int = 0):
         idx = np.arange(len(X))
         if shuffle:
-            rng = np.random.default_rng(self.seed)
+            # Advance the shuffle across epochs — seeding with a constant gave
+            # the identical mini-batch order on every epoch.
+            rng = np.random.default_rng(self.seed + epoch)
             rng.shuffle(idx)
         for start in range(0, len(idx), self.batch_size):
             sl = idx[start:start + self.batch_size]
@@ -186,14 +191,16 @@ class DANNVictim(VictimModel):
         for epoch in range(self.n_epochs):
             running_t = running_s = 0.0
             n = 0
-            for xb, yt, ys in self._iter_batches(X, y_task, y_subj, shuffle=True):
+            for xb, yt, ys in self._iter_batches(X, y_task, y_subj,
+                                                 shuffle=True, epoch=epoch):
                 opt.zero_grad()
                 task_logits, subj_logits = self.model_(xb, lambda_=self.lambda_)
                 lt = ce(task_logits, yt)
                 ls = ce(subj_logits, ys)
-                # GRL handles the sign flip on the subject-loss gradient path,
-                # so we just sum the two losses here.
-                loss = lt + self.lambda_ * ls
+                # GRL already scales the encoder's subject-path gradient by
+                # lambda; sum with unit weight so the encoder feels exactly
+                # lambda (not lambda^2) and the subject head trains fully.
+                loss = lt + ls
                 loss.backward()
                 opt.step()
                 running_t += lt.item() * len(xb)
