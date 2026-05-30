@@ -117,6 +117,7 @@ def main() -> None:
     result, scores, labels = open_set_verification(
         train_ds.X, train_ds.subject_ids,
         test_ds.X, test_ds.subject_ids,
+        trial_test=test_ds.trial_ids,
         n_chans=train_ds.n_channels, n_times=train_ds.n_times,
         n_epochs=args.n_epochs, n_pairs=args.n_pairs,
         seed=args.seed, device=device, verbose=True,

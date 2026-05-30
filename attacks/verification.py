@@ -129,6 +129,7 @@ def open_set_verification(
     X_test: np.ndarray, subj_test: np.ndarray,
     *,
     n_chans: int, n_times: int,
+    trial_test: np.ndarray | None = None,
     embed_dim: int = 64,
     n_epochs: int = 30,
     n_pairs: int = 50_000,
@@ -140,6 +141,14 @@ def open_set_verification(
 
     Returns the result struct plus the (scores, labels) arrays for the
     sampled pairs so the caller can plot ROC / similarity histograms.
+
+    Pass `trial_test` (the per-window trial id of every test window) so that
+    same-subject verification pairs are drawn from two DIFFERENT trials. With
+    2-s windows at 1-s stride there are ~3 heavily-overlapping windows per 4-s
+    trial; a "same" pair drawn at the window level can be two near-duplicate
+    windows of one trial, which is trivially similar and inflates AUC/EER. When
+    `trial_test` is None the sampler falls back to window-level pairs but still
+    forbids window-vs-itself pairs.
     """
     if verbose:
         print(f"Training contrastive embedding on "
@@ -160,30 +169,71 @@ def open_set_verification(
     subj_to_idx_test = {int(s): np.where(subj_test == s)[0] for s in test_subjects}
     half = n_pairs // 2
 
-    same_a = np.zeros(half, dtype=np.int64)
-    same_b = np.zeros(half, dtype=np.int64)
-    for i in range(half):
-        s = int(rng.choice(test_subjects))
-        pool = subj_to_idx_test[s]
-        if len(pool) < 2:
-            continue
-        a, b = rng.choice(pool, size=2, replace=False)
-        same_a[i] = a
-        same_b[i] = b
+    # --- Same-subject pairs -------------------------------------------------
+    # A "same" pair is two DISTINCT windows of one subject and, when trial ids
+    # are supplied, from two DIFFERENT trials (so overlapping within-trial
+    # windows can't pad the positive distribution). Pairs are collected into
+    # lists and only valid ones are kept, so a subject with too few windows is
+    # skipped rather than silently emitting a window-vs-itself pair at index 0.
+    if trial_test is not None:
+        trial_test = np.asarray(trial_test)
+        subj_trial_idx: dict[int, dict[int, np.ndarray]] = {}
+        for s in test_subjects:
+            s = int(s)
+            si = subj_to_idx_test[s]
+            tids = trial_test[si]
+            subj_trial_idx[s] = {int(t): si[tids == t] for t in np.unique(tids)}
+        eligible_same = [s for s in subj_trial_idx if len(subj_trial_idx[s]) >= 2]
+    else:
+        eligible_same = [int(s) for s in test_subjects
+                         if len(subj_to_idx_test[int(s)]) >= 2]
 
-    diff_a = np.zeros(half, dtype=np.int64)
-    diff_b = np.zeros(half, dtype=np.int64)
-    for i in range(half):
+    if not eligible_same:
+        raise ValueError(
+            "open_set_verification: no test subject has two distinct "
+            + ("trials" if trial_test is not None else "windows")
+            + " to form a same-subject pair."
+        )
+
+    same_a_list: list[int] = []
+    same_b_list: list[int] = []
+    max_attempts = half * 50 + 1000
+    attempts = 0
+    while len(same_a_list) < half and attempts < max_attempts:
+        attempts += 1
+        s = int(rng.choice(eligible_same))
+        if trial_test is not None:
+            trials = list(subj_trial_idx[s].keys())
+            ta, tb = rng.choice(len(trials), size=2, replace=False)
+            a = int(rng.choice(subj_trial_idx[s][trials[ta]]))
+            b = int(rng.choice(subj_trial_idx[s][trials[tb]]))
+        else:
+            a, b = (int(v) for v in rng.choice(subj_to_idx_test[s],
+                                               size=2, replace=False))
+        same_a_list.append(a)
+        same_b_list.append(b)
+
+    n_same = len(same_a_list)  # < half only on a pathologically small cohort
+
+    # --- Different-subject pairs (matched count, for a balanced ROC) --------
+    diff_a_list: list[int] = []
+    diff_b_list: list[int] = []
+    for _ in range(n_same):
         s_a, s_b = rng.choice(test_subjects, size=2, replace=False)
-        diff_a[i] = int(rng.choice(subj_to_idx_test[int(s_a)]))
-        diff_b[i] = int(rng.choice(subj_to_idx_test[int(s_b)]))
+        diff_a_list.append(int(rng.choice(subj_to_idx_test[int(s_a)])))
+        diff_b_list.append(int(rng.choice(subj_to_idx_test[int(s_b)])))
+
+    same_a = np.asarray(same_a_list, dtype=np.int64)
+    same_b = np.asarray(same_b_list, dtype=np.int64)
+    diff_a = np.asarray(diff_a_list, dtype=np.int64)
+    diff_b = np.asarray(diff_b_list, dtype=np.int64)
 
     # cosine similarity (Z is L2-normalized, so dot product = cosine)
     same_sim = (Z_test[same_a] * Z_test[same_b]).sum(axis=1)
     diff_sim = (Z_test[diff_a] * Z_test[diff_b]).sum(axis=1)
     scores = np.concatenate([same_sim, diff_sim])
-    labels = np.concatenate([np.ones(half, dtype=np.int64),
-                             np.zeros(half, dtype=np.int64)])
+    labels = np.concatenate([np.ones(n_same, dtype=np.int64),
+                             np.zeros(n_same, dtype=np.int64)])
 
     auc = float(roc_auc_score(labels, scores))
     auc_lo, auc_hi = _bootstrap_auc(scores, labels, seed=seed)
@@ -199,7 +249,7 @@ def open_set_verification(
         n_test_subjects=int(len(test_subjects)),
         n_train_windows=int(len(X_train)),
         n_test_windows=int(len(X_test)),
-        n_pairs=int(half * 2),
+        n_pairs=int(len(scores)),
         auc=auc, auc_ci_low=auc_lo, auc_ci_high=auc_hi,
         eer=eer, eer_threshold=eer_thresh,
     )

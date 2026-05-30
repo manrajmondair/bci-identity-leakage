@@ -111,6 +111,9 @@ def main() -> None:
     # Pool IV-2a windows across subjects
     X_iv = np.concatenate([d.X for d in iv2a_resampled], axis=0)
     subj_iv = np.concatenate([d.subject_ids for d in iv2a_resampled], axis=0)
+    # Per-window trial ids so same-subject verification pairs come from
+    # different trials (within-subject uniqueness is all the sampler needs).
+    trial_iv = np.concatenate([d.trial_ids for d in iv2a_resampled], axis=0)
     # Differentiate IV-2a subject ids from PhysioNet's by adding 10000 offset
     # so the embedder doesn't accidentally see them as PhysioNet labels.
     subj_iv_offset = subj_iv + 10000
@@ -129,6 +132,7 @@ def main() -> None:
     result, scores, labels = open_set_verification(
         phys_22.X, phys_22.subject_ids,
         X_iv, subj_iv_offset,
+        trial_test=trial_iv,
         n_chans=phys_22.n_channels, n_times=phys_22.n_times,
         n_epochs=args.n_epochs, n_pairs=args.n_pairs,
         seed=args.seed, device=device, verbose=True,
