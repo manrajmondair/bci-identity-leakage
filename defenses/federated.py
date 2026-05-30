@@ -56,16 +56,21 @@ class FedRoundLog:
 class FederatedDPVictim(VictimModel):
     """EEGNet trained via FedAvg with central per-client DP noise.
 
-    Privacy budget is tracked via the standard Gaussian-mechanism
-    composition: each round adds noise with scale σ * C (C = clip
-    bound), and after R rounds the total budget at the client level
-    is roughly (ε, δ) with σ chosen by the analytic moments accountant.
+    The simulation faithfully implements the noise mechanism (per-client
+    clip to C, sum, add N(0, (σC)^2), average). The defense should be read
+    as EMPIRICAL: the reported (ε, δ) is an informal annotation, NOT an
+    enforced guarantee.
 
-    The (ε, δ) BOUND is exposed as an annotation rather than an
-    enforced budget — production-grade accounting would plug an RDP
-    accountant in. The simulation faithfully implements the noise
-    mechanism; the bound is derived from `noise_sigma`, `clip_norm`,
-    `n_rounds`, and the participant fraction.
+    Why informal: with the default `poisson_clients=False` the per-round
+    cohort is sampled to a FIXED size without replacement, whereas the RDP
+    accountant in `rdp_epsilon()` assumes Poisson subsampling (each client
+    included independently w.p. q). The two have different privacy curves,
+    so the fixed-size ε is a heuristic, not a sound bound. Set
+    `poisson_clients=True` to sample clients via independent Bernoulli(q),
+    which matches the accountant's assumption and makes `rdp_epsilon()` a
+    valid participant-level bound (at some utility cost from variable
+    cohort size). The empirical re-ID / fine-tune protection is the
+    substantive result either way.
     """
     name = "eegnet_federated_dp"
 
@@ -83,6 +88,7 @@ class FederatedDPVictim(VictimModel):
         server_lr: float = 1.0,
         clip_norm: float = 1.0,
         noise_sigma: float = 0.4,
+        poisson_clients: bool = False,
         device: str = "auto",
         seed: int = 0,
         input_scale: float = 1e6,
@@ -99,6 +105,7 @@ class FederatedDPVictim(VictimModel):
         self.server_lr = server_lr
         self.clip_norm = clip_norm
         self.noise_sigma = noise_sigma
+        self.poisson_clients = poisson_clients
         self.device = _pick_device(device)
         self.seed = seed
         self.input_scale = input_scale
@@ -191,8 +198,20 @@ class FederatedDPVictim(VictimModel):
         global_sd = {k: v.clone() for k, v in self.model_.state_dict().items()}
 
         for r in range(self.n_rounds):
-            chosen = sorted(int(c) for c in rng.choice(clients, size=n_per_round,
-                                                      replace=False))
+            if self.poisson_clients:
+                # Independent Bernoulli(q) inclusion — matches the Poisson
+                # subsampling the RDP accountant assumes, so rdp_epsilon() is
+                # a valid bound under this mode.
+                incl = rng.random(n_clients) < self.participant_fraction
+                chosen = sorted(int(c) for c in clients[incl])
+                if not chosen:
+                    continue
+            else:
+                # Fixed-size sampling without replacement (default). Note this
+                # does NOT satisfy the accountant's Poisson assumption, so the
+                # reported epsilon is an informal annotation only.
+                chosen = sorted(int(c) for c in rng.choice(clients, size=n_per_round,
+                                                          replace=False))
             # Run each client locally
             deltas: list[dict[str, torch.Tensor]] = []
             pre_norms = []
@@ -293,19 +312,19 @@ class FederatedDPVictim(VictimModel):
         return emb.astype(np.float32, copy=False)
 
     def rdp_epsilon(self, delta: float = 1e-5) -> float:
-        """Participant-level (epsilon, delta)-DP budget via Opacus's RDP accountant.
+        """Participant-level (epsilon, delta) annotation via Opacus's RDP accountant.
 
-        The protocol per round is a sub-sampled Gaussian mechanism on the
-        per-client model delta: a random subset of n_clients * q clients is
-        included, each delta is clipped to L2-norm `clip_norm`, the sum is
-        released after Gaussian noise of std `noise_sigma * clip_norm`. After
-        n_rounds rounds the participant-level (epsilon, delta) is computed by
-        composing the per-round Renyi-DP curves of the sub-sampled Gaussian
-        mechanism and converting back to (epsilon, delta) via the Mironov
-        2017 conversion (Opacus.RDPAccountant).
+        Composes, over n_rounds, the Renyi-DP curve of a sub-sampled Gaussian
+        mechanism with noise_multiplier=noise_sigma and sample_rate=q, then
+        converts to (epsilon, delta) (Mironov 2017 / Opacus.RDPAccountant).
 
-        Compared to the original sqrt(2 R q^2 ln(1/delta)) / sigma estimate,
-        the RDP composition is materially tighter at small sigma and small q.
+        IMPORTANT — read as informal unless `poisson_clients=True`. The RDP
+        subsampled-Gaussian curve assumes each client is included independently
+        with probability q (Poisson sampling). With the default fixed-size
+        cohort (`poisson_clients=False`) the sampling distribution differs, so
+        this number is a heuristic annotation, NOT an enforced bound. Under
+        `poisson_clients=True` the assumption holds and the returned epsilon is
+        a valid participant-level bound.
         """
         try:
             from opacus.accountants import RDPAccountant
@@ -322,11 +341,16 @@ class FederatedDPVictim(VictimModel):
                             sample_rate=float(self.participant_fraction))
         return float(accountant.get_epsilon(delta=delta))
 
-    def informal_epsilon_estimate(self) -> float:
-        """Backwards-compatible alias for the simpler Gaussian-mechanism bound.
+    def informal_epsilon_estimate(self, delta: float = 1e-5) -> float:
+        """Coarse analytic Gaussian-composition estimate: sqrt(2 R q^2 ln(1/δ))/σ.
 
-        Older result JSONs reference this name. New code should call
-        `rdp_epsilon` directly, which composes the per-round sub-sampled
-        Gaussian via Opacus's RDP accountant and is tighter at small sigma.
+        Looser than `rdp_epsilon` and, like it, only a heuristic annotation —
+        the fixed-size (non-Poisson) default sampling means neither number is
+        an enforced (epsilon, delta) guarantee. Kept distinct (it previously
+        just aliased `rdp_epsilon`, which was misleading) so the reported
+        'simple Gaussian bound' is actually the simple bound.
         """
-        return self.rdp_epsilon()
+        R = max(self.n_rounds, 1)
+        q = self.participant_fraction
+        sigma = max(self.noise_sigma, 1e-6)
+        return math.sqrt(2.0 * R * q * q * math.log(1.0 / delta)) / sigma

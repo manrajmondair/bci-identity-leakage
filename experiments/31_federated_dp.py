@@ -168,6 +168,12 @@ def main() -> None:
         "epsilon_participant_level_rdp": float(eps_rdp),
         "epsilon_participant_level_delta": 1e-5,
         "epsilon_participant_level_simple_gaussian_bound": float(eps_simple),
+        "epsilon_is_formal_guarantee": bool(getattr(victim, "poisson_clients", False)),
+        "epsilon_note": ("RDP epsilon is a valid participant-level bound only "
+                         "under Poisson client sampling (poisson_clients=True); "
+                         "this run used fixed-size cohort sampling, so epsilon "
+                         "is an informal annotation, not an enforced budget. The "
+                         "empirical fine-tune protection is the substantive result."),
         "round_log": [vars(r) for r in victim.round_log_],
         "attack_logreg": asdict(a1),
         "attack_finetune": {
