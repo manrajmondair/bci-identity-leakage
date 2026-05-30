@@ -5,12 +5,13 @@ Given white-box access to a trained re-ID model
 the attacker chooses a target subject id k and reconstructs a synthetic
 EEG window x* that the model maps to high probability of subject k:
 
-    x*_k = argmin_{x in feasible}  CE(f(x), one_hot(k))  +  λ * R(x)
+    x*_k = argmin_{x in feasible}  CE(f(x), one_hot(k))
 
-with x initialised at zero / N(0, 1), optimised via PGD on the input
-with a feasibility projection that keeps the per-channel std within the
-empirical bounds of real motor-imagery EEG (so we recover something
-EEG-shaped rather than adversarial garbage).
+with x initialised near zero, optimised via projected gradient descent on
+the input. The only regulariser is the feasibility projection that keeps
+each channel's std within the empirical bounds of real motor-imagery EEG
+(so we recover something EEG-shaped rather than adversarial garbage); there
+is no separate lambda*R(x) penalty term.
 
 Reconstruction success metric: cosine similarity in a frozen reference
 embedding (the project's pretrained contrastive EEGNet from experiment
@@ -85,7 +86,7 @@ def invert_subject(
     input_scale: float,
     n_steps: int = 600,
     lr: float = 0.05,
-    weight_decay: float = 1e-3,
+    weight_decay: float = 0.0,
     device: str = "cuda",
     seed: int = 0,
 ) -> torch.Tensor:
@@ -93,6 +94,12 @@ def invert_subject(
 
     f must take (B, C, T) inputs scaled by `input_scale` and output
     (B, n_subjects) logits.
+
+    `weight_decay` defaults to 0: Adam weight decay here would decay the
+    optimised INPUT x toward zero every step, fighting the feasibility
+    projection and biasing reconstructions toward null EEG. The per-channel
+    std projection is the intended (and only) regulariser; there is no
+    separate lambda*R(x) penalty term.
     """
     torch.manual_seed(seed)
     std_lo_t = torch.as_tensor(std_lo, dtype=torch.float32, device=device)

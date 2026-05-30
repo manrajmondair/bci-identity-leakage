@@ -557,15 +557,24 @@ def check_extension_results(audit: "Audit") -> None:
             for r in rows:
                 _in_unit_interval(audit, f"{label} {victim} N={r['n']} top1",
                                   r.get("top1"))
-        # Yeom overlay: empirical fine-tune top-1 must not exceed the Yeom bound.
+        # Yeom overlay: the Yeom (eps, delta) value upper-bounds MEMBERSHIP-
+        # INFERENCE advantage, NOT closed-set re-ID top-1 — different
+        # quantities on different scales. Re-ID is empirically easier than MI
+        # for the attacker, so the MI bound tends to sit above the re-ID curve,
+        # but that is a loose sanity reference, not a formal bound. Record it as
+        # OK/WARN only; never FAIL the audit on it.
         if d.get("yeom_overlay"):
             for r in d["yeom_overlay"]:
                 if r["yeom_bound_re_id_upper"] is None:
                     continue
-                audit.expect(f"{label} fine-tune <= Yeom bound (eps={r['target_epsilon']})",
-                             r["empirical_finetune_top1"] <= r["yeom_bound_re_id_upper"] + 1e-9,
-                             f"emp={r['empirical_finetune_top1']:.3f}  "
-                             f"bound={r['yeom_bound_re_id_upper']:.3f}")
+                within = r["empirical_finetune_top1"] <= r["yeom_bound_re_id_upper"] + 1e-9
+                audit.record(
+                    f"{label} fine-tune vs Yeom MI bound "
+                    f"(loose reference, eps={r['target_epsilon']})",
+                    _OK if within else _WARN,
+                    f"emp={r['empirical_finetune_top1']:.3f}  "
+                    f"yeom_mi_bound={r['yeom_bound_re_id_upper']:.3f} "
+                    f"(reference only; not a formal re-ID bound)")
 
     # ---- experiment 31: federated DP-FedAvg ---------------------------
     p = RESULTS_DIR / "31_federated_dp.json"

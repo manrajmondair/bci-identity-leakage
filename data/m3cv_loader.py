@@ -12,6 +12,12 @@ loader so that, when the corpus is mirrored into the cache path under
 `BCI_M3CV_CACHE`, the rest of the codebase can consume it as a
 second-corpus alongside Lee 2019 and IV-2a.
 
+This module is CACHE-ONLY: it contains no download or .mat/.npz decoding
+code. It only reads a pre-built compact cache that an external mirroring
+step must produce under `BCI_M3CV_CACHE`; until that cache exists,
+`is_available()` returns False and the corpus is simply skipped. M3CV is an
+optional/aspirational second corpus, not wired into any committed result.
+
 The expected on-disk layout is documented below; `load_subject_session_compact`
 is the entry point used by experiments when the cache is present.
 

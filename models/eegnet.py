@@ -90,10 +90,13 @@ class EEGNetVictim(VictimModel):
         )
         return net.to(self.device)
 
-    def _iter_batches(self, X: np.ndarray, y: np.ndarray | None, shuffle: bool):
+    def _iter_batches(self, X: np.ndarray, y: np.ndarray | None, shuffle: bool,
+                      epoch: int = 0):
         idx = np.arange(len(X))
         if shuffle:
-            rng = np.random.default_rng(self.seed)
+            # Advance the shuffle across epochs — seeding with a constant gave
+            # the identical mini-batch order on every epoch.
+            rng = np.random.default_rng(self.seed + epoch)
             rng.shuffle(idx)
         for start in range(0, len(idx), self.batch_size):
             sl = idx[start:start + self.batch_size]
@@ -117,7 +120,7 @@ class EEGNetVictim(VictimModel):
         for epoch in range(self.n_epochs):
             running = 0.0
             n = 0
-            for xb, yb in self._iter_batches(X, y, shuffle=True):
+            for xb, yb in self._iter_batches(X, y, shuffle=True, epoch=epoch):
                 opt.zero_grad()
                 logits = self.model_(xb)
                 loss = loss_fn(logits, yb)
@@ -177,14 +180,26 @@ class EEGNetVictim(VictimModel):
 
     @staticmethod
     def _find_head(net: nn.Module) -> nn.Module:
-        """Locate the final classification head as a named child first
-        (covers braindecode's stable names) and fall back to the last
-        named child if none matched.
+        """Locate the final classification head by stable braindecode names,
+        falling back to the last child that actually contains a Linear.
+
+        The old fallback grabbed the literal last named child, which after
+        Opacus's ModuleValidator.fix (BatchNorm -> GroupNorm) could be a
+        norm/flatten/permute layer — silently hooking the wrong layer and
+        mis-defining the embedding. Require a Linear so the hook captures the
+        true pre-classifier features, and raise loudly otherwise.
         """
         for candidate in ("final_layer", "classifier", "fc", "head"):
             if hasattr(net, candidate):
                 return getattr(net, candidate)
-        children = list(net.named_children())
-        if not children:
+        named = list(net.named_children())
+        if not named:
             raise RuntimeError("EEGNet has no children; can't locate head")
-        return children[-1][1]
+        for _name, mod in reversed(named):
+            if isinstance(mod, nn.Linear):
+                return mod
+            if any(isinstance(m, nn.Linear) for m in mod.modules()):
+                return mod
+        raise RuntimeError(
+            "EEGNet: could not locate a classifier head (no Linear child found)."
+        )

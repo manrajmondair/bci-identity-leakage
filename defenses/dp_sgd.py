@@ -13,6 +13,15 @@ is "loose"; ε → ∞ recovers vanilla SGD.
 A1 closed-set re-ID is then run against the DP-trained encoder's
 embeddings to measure how much identity *empirically* survives the
 privacy mechanism.
+
+Caveat when comparing to the A1 headline baseline: this victim is
+GroupNorm + plain SGD (Opacus requires GroupNorm, and DP-SGD uses SGD),
+whereas the A1 baseline is AdamW + BatchNorm. That architecture swap
+alone lowers re-ID a lot, independent of any privacy noise. The clean
+"how much is the privacy vs the architecture" decomposition is the
+target_epsilon=None arm here and the dedicated ablation in
+experiments/19_dp_sgd_arch_ablation.py — do not read the gap between this
+no-DP baseline and the AdamW+BatchNorm A1 baseline as a privacy effect.
 """
 from __future__ import annotations
 
@@ -178,16 +187,22 @@ class DPSGDVictim(VictimModel):
         if X.dtype != np.float32:
             X = X.astype(np.float32, copy=False)
         assert self.model_ is not None
-        # Locate the head; ModuleValidator.fix may have wrapped things.
+        # Locate the head; ModuleValidator.fix may have wrapped/renamed layers,
+        # so the fallback must find a layer that actually contains a Linear
+        # rather than blindly taking the last child (which could be a GroupNorm
+        # and silently mis-define the embedding).
         head = None
         for candidate in ("final_layer", "classifier", "fc", "head"):
             if hasattr(self.model_, candidate):
                 head = getattr(self.model_, candidate)
                 break
         if head is None:
-            # Fallback to the last named child
-            children = list(self.model_.named_children())
-            head = children[-1][1] if children else None
+            for _name, mod in reversed(list(self.model_.named_children())):
+                if isinstance(mod, nn.Linear) or any(
+                    isinstance(m, nn.Linear) for m in mod.modules()
+                ):
+                    head = mod
+                    break
         if head is None:
             raise RuntimeError("DP-EEGNet: cannot locate classifier head for embedding hook")
 

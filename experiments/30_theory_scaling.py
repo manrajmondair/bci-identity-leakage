@@ -247,6 +247,10 @@ def main() -> None:
         yeom_overlay = []
         for row in sweep["pareto"]:
             eps = row["final_epsilon"] if row["final_epsilon"] is not None else float("inf")
+            # Yeom 2018 bounds MEMBERSHIP-INFERENCE advantage by 1 - e^-eps - delta.
+            # We overlay it against empirical re-ID top-1 purely as a loose
+            # reference (re-ID is empirically easier than MI, so the curve sits
+            # below this MI bound) — it is NOT a formal upper bound on re-ID.
             bound = (1.0 - math.exp(-eps) - delta) if math.isfinite(eps) else 1.0
             yeom_overlay.append({
                 "target_epsilon": row["target_epsilon"],

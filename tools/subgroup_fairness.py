@@ -7,6 +7,13 @@ Both releases use the same BCI2000 source files and the same subject indexing
 (sub-001 ↔ S001), so we can map demographics back onto the PhysioNet release
 we run our experiments on.
 
+Mapping caveat: this sub-NNN ↔ SNNN correspondence is empirically verified
+(via recording-duration fingerprinting) for only ~7 of 104 subjects that have
+unique duration vectors; the rest rests on a structural / no-documented-
+reindexing argument (see data/external/MAPPING_VERIFICATION.md). The
+demographic-stratified results below inherit that assumption — treat the
+subgroup gaps as indicative, not identity-verified ground truth.
+
 We do TWO complementary analyses:
 
   1. Demographic stratification.

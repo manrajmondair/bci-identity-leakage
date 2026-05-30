@@ -1,5 +1,10 @@
 subject_id	sex	age	handedness	source
 # Per-subject demographics for Lee 2019 OpenBMI motor imagery, 54 subjects.
+# STATUS: UNPOPULATED TEMPLATE — every data row is n/a. Lee 2019 publishes
+#   only cohort aggregates (25F/29M, ages 24-35), so per-subject demographic
+#   stratification is not possible; experiment 32 therefore reports only
+#   within-cohort heterogeneity and skips demographic splits when this file
+#   is all n/a. Fill it in only if a per-subject table becomes available.
 # Populate this file from Lee et al. 2019 GigaScience Supplementary Table 1
 # (https://gigascience.biomedcentral.com/articles/10.1093/gigascience/giz002).
 # Schema:

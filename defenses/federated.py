@@ -288,8 +288,14 @@ class FederatedDPVictim(VictimModel):
                 head = getattr(self.model_, candidate)
                 break
         if head is None:
-            children = list(self.model_.named_children())
-            head = children[-1][1] if children else None
+            # Require a layer that contains a Linear rather than blindly taking
+            # the last child (post-ModuleValidator.fix that could be GroupNorm).
+            for _name, mod in reversed(list(self.model_.named_children())):
+                if isinstance(mod, nn.Linear) or any(
+                    isinstance(m, nn.Linear) for m in mod.modules()
+                ):
+                    head = mod
+                    break
         if head is None:
             raise RuntimeError("Federated-EEGNet: cannot locate classifier head")
         captured: list[torch.Tensor] = []
