@@ -204,7 +204,8 @@ def main() -> None:
     print(f"  EER = {result.eer:.4f}  total seconds: {dt:.1f}")
 
     # Comparison vs experiment 26's binary-task baseline
-    BINARY_BASELINE_AUC = 0.4959382008
+    # (Lee 2019 -> PhysioNet, results/26_a4_xds_lee2019_to_physionet.json, seed 0)
+    BINARY_BASELINE_AUC = 0.4986738224
     auc_lift = result.auc - BINARY_BASELINE_AUC
 
     out = {
