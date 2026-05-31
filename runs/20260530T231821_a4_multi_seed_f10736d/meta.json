@@ -1,0 +1,15 @@
+{
+  "run_id": "20260530T231821_a4_multi_seed_f10736d",
+  "experiment": "experiments.14_a4_multi_seed",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "f10736d",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+  "torch_version": "2.10.0+cu128",
+  "completed_at_utc": "2026-05-30T23:18:21Z",
+  "outputs": [
+    "results/14_a4_multi_seed.json"
+  ]
+}

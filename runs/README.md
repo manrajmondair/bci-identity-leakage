@@ -29,4 +29,8 @@ runs/
 
 Notebooks under `colab/` write this file at the end of every run; the result JSON and meta JSON are committed to canonical paths so every reported number traces back to a specific commit + hardware + timestamp.
 
-The audit history is persisted under `runs/` as `<timestamp>_audit_<sha>/audit.{md,json}` — one subdirectory per `python -m tools.audit` invocation. The latest audit returns **240 OK / 0 WARN / 0 FAIL**.
+`python -m tools.audit` writes its report to `runs/<timestamp>_audit_<sha>/audit.{md,json}` when invoked, so an audit can be archived next to the run provenance it checks. The audit enforces the result-file invariants — confidence-interval brackets, unit-interval ranges, train/test split disjointness, effect-size sanity against the literature, and a shuffled-label negative control — over the canonical `results/`.
+
+## 2026-05 refresh
+
+After a code-hardening pass (A4 verification pairing, DANN λ application, federated-ε accounting, and embed-hook robustness — see the git history), every canonical result was re-generated. The refresh-run provenance is the `2026-05-30` / `2026-05-31` entries; the original development runs (`2026-05-07`) are retained for history. Most numbers reproduced exactly — the A4 PhysioNet open-set headline (AUC 0.925) and the closed-set re-ID baselines (100% Riemann / 89% FBCSP / 41% EEGNet) were unchanged.

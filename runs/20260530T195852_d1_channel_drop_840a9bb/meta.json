@@ -1,0 +1,18 @@
+{
+  "run_id": "20260530T195852_d1_channel_drop_840a9bb",
+  "experiment": "experiments.11_d1_adhoc",
+  "args": [
+    "--transform",
+    "channel_drop",
+    "--all"
+  ],
+  "git_sha": "840a9bb",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+  "torch_version": "2.10.0+cu128",
+  "completed_at_utc": "2026-05-30T19:58:52Z",
+  "outputs": [
+    "results/11_d1_channel_drop.json",
+    "figures/11_d1_channel_drop.pdf"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "run_id": "20260530T233428_a4_xds_f10736d",
+  "experiment": "experiments.26_a4_cross_dataset_symmetric",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "f10736d",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+  "torch_version": "2.11.0+cu128",
+  "completed_at_utc": "2026-05-30T23:34:28Z",
+  "outputs": [
+    "results/26_a4_xds_iv2a_to_physionet.json",
+    "results/26_a4_xds_physionet_to_lee2019.json",
+    "results/26_a4_xds_lee2019_to_physionet.json",
+    "results/26_a4_xds_iv2a_to_lee2019.json"
+  ]
+}

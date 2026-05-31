@@ -1,0 +1,15 @@
+{
+  "run_id": "20260530T234519_a4_asymmetry_f10736d",
+  "experiment": "experiments.33_a4_asymmetry_mechanism",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "f10736d",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+  "torch_version": "2.11.0+cu128",
+  "completed_at_utc": "2026-05-30T23:45:19Z",
+  "outputs": [
+    "results/33_a4_asymmetry_mechanism.json"
+  ]
+}

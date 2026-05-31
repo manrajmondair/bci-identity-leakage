@@ -1,0 +1,16 @@
+{
+  "run_id": "20260530T192101_a2_cross_task_840a9bb",
+  "experiment": "experiments.04_a2_cross_task",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "840a9bb",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+  "torch_version": "2.10.0+cu128",
+  "completed_at_utc": "2026-05-30T19:21:01Z",
+  "outputs": [
+    "results/04_a2_cross_task.json",
+    "figures/04_a2_cross_task.pdf"
+  ]
+}

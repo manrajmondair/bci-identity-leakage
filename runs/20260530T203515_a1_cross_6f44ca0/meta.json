@@ -1,0 +1,16 @@
+{
+  "run_id": "20260530T203515_a1_cross_6f44ca0",
+  "experiment": "experiments.02_closed_set_reid",
+  "args": [
+    "--all"
+  ],
+  "git_sha": "6f44ca0",
+  "hardware": "Colab NVIDIA L4",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+  "torch_version": "2.10.0+cu128",
+  "completed_at_utc": "2026-05-30T20:35:15Z",
+  "outputs": [
+    "results/02_closed_set_reid.json",
+    "figures/02_closed_set_reid.pdf"
+  ]
+}
