@@ -13,7 +13,13 @@ as a reference for which JSON drives which figure.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+
+# Reproducible figure builds: pin the timestamp matplotlib embeds in each PDF's
+# /CreationDate so regenerating the figures yields byte-identical files (no
+# spurious git churn, and a reviewer who reruns gets exactly the committed PDFs).
+os.environ.setdefault("SOURCE_DATE_EPOCH", "1717200000")  # 2024-06-01 UTC
 
 import matplotlib.pyplot as plt
 import numpy as np
