@@ -7,7 +7,7 @@ machine-learning brain–computer interface (BCI) models trained for
 motor-imagery decoding, together with four families of defenses
 evaluated under matched generic *and* adaptive attackers. Three EEG
 corpora, thirty-three numbered experiments, 1000-resample trial-grouped
-bootstrap CIs, and a 240-invariant audit on every commit.
+bootstrap CIs, and a 273-invariant audit on every commit.
 
 ## Key results
 
@@ -45,7 +45,7 @@ pip install -e ".[dev]"
 ## Reproducing the results
 
 ```bash
-python -m tools.audit                # 240 invariants on results/*.json
+python -m tools.audit                # 273 invariants on results/*.json
 python -m tools.regenerate_figures   # rebuild every figure from results/
 ```
 

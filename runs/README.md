@@ -29,7 +29,7 @@ runs/
 
 Notebooks under `colab/` write this file at the end of every run; the result JSON and meta JSON are committed to canonical paths so every reported number traces back to a specific commit + hardware + timestamp.
 
-`python -m tools.audit` writes its report to `runs/<timestamp>_audit_<sha>/audit.{md,json}` when invoked, so an audit can be archived next to the run provenance it checks. The audit enforces the result-file invariants — confidence-interval brackets, unit-interval ranges, train/test split disjointness, effect-size sanity against the literature, and a shuffled-label negative control — over the canonical `results/`.
+`python -m tools.audit` writes its report to `runs/<timestamp>_audit_<sha>/audit.{md,json}` when invoked, so an audit can be archived next to the run provenance it checks. The audit enforces the result-file invariants — confidence-interval brackets, unit-interval ranges, train/test split disjointness, effect-size sanity against the literature, and a shuffled-label negative control — over the canonical `results/`. The latest run on the refreshed results returns **273 OK / 0 WARN / 0 FAIL**.
 
 ## 2026-05 refresh
 
