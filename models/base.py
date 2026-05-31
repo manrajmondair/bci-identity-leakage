@@ -20,7 +20,7 @@ class VictimModel(ABC):
     n_classes: int = 4
 
     @abstractmethod
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "VictimModel":
+    def fit(self, X: np.ndarray, y: np.ndarray) -> VictimModel:
         """Fit the task decoder on (windows, motor-imagery labels)."""
 
     @abstractmethod

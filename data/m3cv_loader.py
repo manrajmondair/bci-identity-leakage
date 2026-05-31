@@ -43,7 +43,6 @@ import numpy as np
 
 from preprocess.windows import WindowedDataset
 
-
 SUPPORTED_PARADIGMS = (
     "resting",         # eyes-open / eyes-closed
     "imagery",         # motor imagery (left/right hand, feet)

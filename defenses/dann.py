@@ -169,7 +169,7 @@ class DANNVictim(VictimModel):
 
     # ---- VictimModel API ---------------------------------------------
     def fit(self, X: np.ndarray, y_task: np.ndarray,
-            subject_ids: np.ndarray | None = None) -> "DANNVictim":
+            subject_ids: np.ndarray | None = None) -> DANNVictim:
         if subject_ids is None:
             raise ValueError(
                 "DANNVictim.fit requires subject_ids — pass the subject id of every window"

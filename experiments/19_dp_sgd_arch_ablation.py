@@ -89,7 +89,7 @@ def main() -> None:
     # GroupNorm-EEGNet built via ModuleValidator.fix, but with the
     # PrivacyEngine bypassed. Same SGD optimizer, same hyperparameters
     # except no per-sample gradient clipping and no Gaussian noise.
-    print(f"=== training GroupNorm-EEGNet (SGD, no DP) ===", flush=True)
+    print("=== training GroupNorm-EEGNet (SGD, no DP) ===", flush=True)
     victim = DPSGDVictim(
         n_channels=train.n_channels, n_times=train.n_times, n_classes=4,
         n_epochs=args.n_epochs, batch_size=args.batch_size, lr=args.lr,

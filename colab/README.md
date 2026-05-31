@@ -66,8 +66,8 @@ needs to be committed.
 | Notebook | Experiment script | Wall (L4) |
 |---|---|---|
 | `D1_pca.ipynb` | `experiments.07_d1_pca` | ~30 min |
-| `D1_noise.ipynb` | `experiments.11_d1_adhoc --defense noise` | ~30 min |
-| `D1_channel_drop.ipynb` | `experiments.11_d1_adhoc --defense channel_drop` | ~30 min |
+| `D1_noise.ipynb` | `experiments.11_d1_adhoc --transform noise` | ~30 min |
+| `D1_channel_drop.ipynb` | `experiments.11_d1_adhoc --transform channel_drop` | ~30 min |
 | `D2_dann.ipynb` | `experiments.09_d2_dann` (4-point λ sweep) | ~45 min |
 | `D2_dann_extended.ipynb` | `experiments.09_d2_dann` (extended grid) | ~50 min |
 | `D3_dp_sgd.ipynb` | `experiments.10_d3_dp_sgd` (3-point ε sweep) | ~50 min |

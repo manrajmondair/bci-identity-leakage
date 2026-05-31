@@ -118,7 +118,7 @@ def _fine_tune(victim: EEGNetVictim, X_train, y_train,
     n = len(X_train)
     Xt = torch.from_numpy(X_train.astype(np.float32, copy=False))
     yt = torch.from_numpy(y_idx)
-    for epoch in range(n_epochs):
+    for _epoch in range(n_epochs):
         idx = rng.permutation(n)
         for i in range(0, n, batch_size):
             sl = idx[i:i + batch_size]

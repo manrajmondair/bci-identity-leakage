@@ -117,7 +117,7 @@ class FBCSPVictim(VictimModel):
         return np.concatenate(feats, axis=1).astype(np.float32, copy=False)
 
     # ---- VictimModel API -------------------------------------------------
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "FBCSPVictim":
+    def fit(self, X: np.ndarray, y: np.ndarray) -> FBCSPVictim:
         if X.dtype != np.float32:
             X = X.astype(np.float32, copy=False)
         self.csps_ = []

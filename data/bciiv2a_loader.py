@@ -23,7 +23,6 @@ exclusively for cross-session re-ID.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
 
 import mne
 import numpy as np
@@ -31,20 +30,12 @@ import numpy as np
 from preprocess.filtering import bandpass
 from preprocess.windows import WindowedDataset, slide_windows
 
-
 _BCI2014_001_CLASSES = {
     "left_hand": 0,
     "right_hand": 1,
     "feet": 2,
     "tongue": 3,
 }
-
-
-@dataclass(frozen=True)
-class BCIIV2aRecording:
-    subject_id: int
-    session: str  # 'session_T' (training) or 'session_E' (evaluation)
-    raw: mne.io.BaseRaw  # already concatenated across runs within session
 
 
 def _load_dataset():

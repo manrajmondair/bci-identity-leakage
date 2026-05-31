@@ -177,7 +177,7 @@ class FederatedDPVictim(VictimModel):
         return nrm, post
 
     def fit(self, X: np.ndarray, y: np.ndarray,
-            client_ids: np.ndarray) -> "FederatedDPVictim":
+            client_ids: np.ndarray) -> FederatedDPVictim:
         """Fit via FedAvg with central per-client DP noise.
 
         `client_ids` is a per-window array assigning each window to a

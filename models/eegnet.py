@@ -109,7 +109,7 @@ class EEGNetVictim(VictimModel):
     # ------------------------------------------------------------------
     # VictimModel API
     # ------------------------------------------------------------------
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "EEGNetVictim":
+    def fit(self, X: np.ndarray, y: np.ndarray) -> EEGNetVictim:
         if X.dtype != np.float32:
             X = X.astype(np.float32, copy=False)
         self.model_ = self._build()

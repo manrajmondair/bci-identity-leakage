@@ -28,7 +28,7 @@ class ChannelPCA:
     _pca: PCA | None = None
     _mean: np.ndarray | None = None
 
-    def fit(self, X: np.ndarray) -> "ChannelPCA":
+    def fit(self, X: np.ndarray) -> ChannelPCA:
         n, c, t = X.shape
         flat = X.transpose(0, 2, 1).reshape(n * t, c).astype(np.float64, copy=False)
         self._mean = flat.mean(axis=0)
@@ -59,7 +59,7 @@ class ChannelGaussianNoise:
     seed: int = 0
     _channel_std: np.ndarray | None = None
 
-    def fit(self, X: np.ndarray) -> "ChannelGaussianNoise":
+    def fit(self, X: np.ndarray) -> ChannelGaussianNoise:
         # Per-channel std across (window, time) on the training set
         self._channel_std = X.std(axis=(0, 2)).astype(np.float32)
         return self
@@ -84,7 +84,7 @@ class ChannelDrop:
     k: int
     _kept: np.ndarray | None = None
 
-    def fit(self, X: np.ndarray) -> "ChannelDrop":
+    def fit(self, X: np.ndarray) -> ChannelDrop:
         var = X.var(axis=(0, 2))
         # Indices of top-k by variance
         self._kept = np.argsort(-var)[: self.k]

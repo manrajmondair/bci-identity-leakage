@@ -71,7 +71,7 @@ def _train_deep_mlp(Z_train, y_train, *, n_classes, device, n_epochs=60, lr=1e-3
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     rng = np.random.default_rng(seed)
     model.train()
-    for epoch in range(n_epochs):
+    for _epoch in range(n_epochs):
         idx = rng.permutation(n)
         for i in range(0, n, batch_size):
             sl = idx[i:i + batch_size]
@@ -234,7 +234,7 @@ def _fine_tune_dp_encoder(victim: DPSGDVictim, X_train, y_train,
     n = len(X_train)
     Xt = torch.from_numpy(X_train.astype(np.float32, copy=False))
     yt = torch.from_numpy(y_idx)
-    for epoch in range(n_epochs):
+    for _epoch in range(n_epochs):
         idx = rng.permutation(n)
         for i in range(0, n, batch_size):
             sl = idx[i:i + batch_size]
@@ -342,7 +342,7 @@ def main() -> None:
     results: list[AdaptiveResult] = []
 
     # ---- Attack 1: standard logreg ----
-    print(f"\n=== attack 1: logreg probe (frozen DP encoder) ===", flush=True)
+    print("\n=== attack 1: logreg probe (frozen DP encoder) ===", flush=True)
     t0 = time.time()
     a1 = closed_set_reid(victim, train, test, probes=("logreg",),
                          bootstrap_n=1000, seed=args.seed)[0]
@@ -357,7 +357,7 @@ def main() -> None:
           f"({time.time() - t0:.0f}s)", flush=True)
 
     # ---- Attack 2: deep MLP probe ----
-    print(f"\n=== attack 2: deep MLP probe (frozen DP encoder) ===", flush=True)
+    print("\n=== attack 2: deep MLP probe (frozen DP encoder) ===", flush=True)
     t0 = time.time()
     mlp, sid_to_idx = _train_deep_mlp(
         Z_train, train.subject_ids, n_classes=n_subj,
@@ -383,7 +383,7 @@ def main() -> None:
           f"({time.time() - t0:.0f}s)", flush=True)
 
     # ---- Attack 3: encoder fine-tune ----
-    print(f"\n=== attack 3: encoder fine-tune (end-to-end on DP weights) ===",
+    print("\n=== attack 3: encoder fine-tune (end-to-end on DP weights) ===",
           flush=True)
     t0 = time.time()
     ft_model, sid_to_idx = _fine_tune_dp_encoder(

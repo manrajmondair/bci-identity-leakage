@@ -66,7 +66,7 @@ class RiemannianVictim(VictimModel):
             )),
         ])
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "RiemannianVictim":
+    def fit(self, X: np.ndarray, y: np.ndarray) -> RiemannianVictim:
         # pyriemann expects float64 covariance inputs
         Xd = X.astype(np.float64, copy=False)
         self._pipeline = self._build_pipeline()

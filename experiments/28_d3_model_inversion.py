@@ -54,10 +54,9 @@ from attacks.verification import _train_contrastive
 from config import RESULTS_DIR
 from data.physionet_loader import valid_subjects
 from defenses.dp_sgd import DPSGDVictim
-from experiments.eegnet_helpers import (  # noqa: F401  — created below
+from experiments.eegnet_helpers import (
     finetune_to_reid_head,
 )
-from models.contrastive import ContrastiveEEGNet
 from preprocess.windows import windowed_subjects
 
 VICTIM_TRAIN_RUNS = (4, 6, 8, 10)
@@ -135,7 +134,7 @@ def main() -> None:
           f"ε_final={dp.final_epsilon_:.2f}", flush=True)
 
     # ---- 2. Train no-DP victim ----
-    print(f"\n=== training no-DP EEGNet victim (vanilla) ===", flush=True)
+    print("\n=== training no-DP EEGNet victim (vanilla) ===", flush=True)
     from models.eegnet import EEGNetVictim
     t0 = time.time()
     nodp = EEGNetVictim(
@@ -146,12 +145,12 @@ def main() -> None:
     print(f"  trained in {time.time() - t0:.1f}s", flush=True)
 
     # ---- 3. Fine-tune both into 80-way re-ID heads ----
-    print(f"\n=== fine-tuning DP victim into re-ID head ===", flush=True)
+    print("\n=== fine-tuning DP victim into re-ID head ===", flush=True)
     dp_head, dp_sid_to_idx = finetune_to_reid_head(
         dp, victim_train.X, victim_train.subject_ids,
         device=device, n_epochs=args.ft_epochs, seed=args.seed, source="dp",
     )
-    print(f"=== fine-tuning no-DP victim into re-ID head ===", flush=True)
+    print("=== fine-tuning no-DP victim into re-ID head ===", flush=True)
     nodp_head, nodp_sid_to_idx = finetune_to_reid_head(
         nodp, victim_train.X, victim_train.subject_ids,
         device=device, n_epochs=args.ft_epochs, seed=args.seed, source="vanilla",
@@ -226,7 +225,7 @@ def main() -> None:
     out_path = RESULTS_DIR / "28_d3_model_inversion.json"
     out_path.write_text(json.dumps(payload, indent=2))
     print(f"\nResults written to {out_path}")
-    print(f"\n  Comparison:")
+    print("\n  Comparison:")
     print(f"    no defense   rank1={out_nodp['rank1_acc']:.3f}  rank5={out_nodp['rank5_acc']:.3f}")
     print(f"    DP ε={args.target_epsilon}      rank1={out_dp['rank1_acc']:.3f}  rank5={out_dp['rank5_acc']:.3f}")
     print(f"    chance       rank1={1.0/len(target_subjects):.3f}  "

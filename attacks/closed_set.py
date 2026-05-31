@@ -102,7 +102,6 @@ def closed_set_reid(
         # Top-k from predicted probabilities. top-k for k >= n_classes is
         # trivially 1.0, so we report NaN there to avoid presenting a
         # meaningless number alongside the real ones.
-        top1 = _topk_proba(clf, Z_test, y_test, k=1)
         top5 = _topk_proba(clf, Z_test, y_test, k=5) if n_subjects > 5 else float("nan")
         top10 = _topk_proba(clf, Z_test, y_test, k=10) if n_subjects > 10 else float("nan")
 

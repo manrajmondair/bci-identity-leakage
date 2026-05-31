@@ -12,7 +12,7 @@ arbitrary (n_windows, n_channels, n_times) arrays from either loader.
 """
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 import numpy as np
 import scipy.signal

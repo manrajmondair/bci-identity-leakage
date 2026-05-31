@@ -169,7 +169,6 @@ def _plot_d1(results: list[dict], out_path, *, title: str) -> None:
     colors = {"eegnet": "#2c3e50", "fbcsp_lda": "#7f8c8d", "riemann_ts_lr": "#34495e"}
     markers = {"eegnet": "o", "fbcsp_lda": "s", "riemann_ts_lr": "^"}
 
-    ks = sorted({r["k"] for r in results}, reverse=True)
     for fam in families:
         rows = [r for r in results if r["victim"] == fam and r["probe"] == "logreg"]
         rows.sort(key=lambda r: -r["k"])

@@ -236,8 +236,8 @@ def _plot(results: list[dict], out_path, *, transform: str, title: str) -> None:
 
 
 def _print_table(results: list[dict], *, transform: str) -> None:
-    print(f"\n| Victim | Probe | Strength | Defense | Top-1 (95% CI) | Task acc |")
-    print(f"|---|---|---|---|---|---|")
+    print("\n| Victim | Probe | Strength | Defense | Top-1 (95% CI) | Task acc |")
+    print("|---|---|---|---|---|---|")
     sort_key = (lambda r: (r["victim"], r["probe"], r["strength"])) \
         if transform == "noise" \
         else (lambda r: (r["victim"], r["probe"], -r["strength"]))

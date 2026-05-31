@@ -31,12 +31,9 @@ import csv
 import json
 import time
 from collections import Counter
-from pathlib import Path
 
 import numpy as np
-import torch
 from scipy.stats import mannwhitneyu
-
 from sklearn.linear_model import LogisticRegression
 
 from config import RESULTS_DIR, ROOT

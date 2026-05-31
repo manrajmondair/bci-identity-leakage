@@ -38,8 +38,13 @@ import numpy as np
 
 from attacks.closed_set import closed_set_reid
 from config import (
-    BANDPASS_HIGH, BANDPASS_LOW, FIGURES_DIR, RESULTS_DIR,
-    PHYSIONET_RUNS_BASELINE, WINDOW_SECONDS, WINDOW_STRIDE_SECONDS,
+    BANDPASS_HIGH,
+    BANDPASS_LOW,
+    FIGURES_DIR,
+    PHYSIONET_RUNS_BASELINE,
+    RESULTS_DIR,
+    WINDOW_SECONDS,
+    WINDOW_STRIDE_SECONDS,
 )
 from data.physionet_loader import load_subject, valid_subjects
 from eval.plots import closed_set_bar_chart, closed_set_table

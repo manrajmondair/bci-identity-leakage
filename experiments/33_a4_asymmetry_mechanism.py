@@ -59,6 +59,8 @@ from data.channel_subset import (
 )
 from data.lee2019_loader import (
     load_subject_session_compact,
+)
+from data.lee2019_loader import (
     valid_subjects as lee_subjects,
 )
 from data.physionet_loader import valid_subjects as physionet_subjects
@@ -147,7 +149,7 @@ def main() -> None:
     lee_train = sorted(int(s) for s in rng.choice(lee_all, size=n_train_lee, replace=False))
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    print(f"Asymmetry mechanism: Lee 2019 -> PhysioNet with synthetic 4-class label")
+    print("Asymmetry mechanism: Lee 2019 -> PhysioNet with synthetic 4-class label")
     print(f"Lee 2019 train subjects: {len(lee_train)}  |  PhysioNet test subjects: {len(phys)}")
     print(f"Target sfreq: {args.target_sfreq} Hz  Epochs: {args.n_epochs}  Pairs: {args.n_pairs}")
     print(f"Device: {device}\n", flush=True)

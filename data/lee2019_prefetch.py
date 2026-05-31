@@ -37,14 +37,12 @@ Usage
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
-
 
 LEE2019_URL = (
     "https://s3.ap-northeast-1.wasabisys.com/gigadb-datasets/live/pub/"
@@ -242,8 +240,9 @@ def _resample_axis(X: np.ndarray, src_sfreq: float, tgt_sfreq: float) -> np.ndar
     """Polyphase resampling along the last axis."""
     if abs(src_sfreq - tgt_sfreq) < 0.5:
         return X
-    from scipy.signal import resample_poly
     from math import gcd
+
+    from scipy.signal import resample_poly
     g = gcd(int(round(src_sfreq)), int(round(tgt_sfreq)))
     up = int(round(tgt_sfreq)) // g
     down = int(round(src_sfreq)) // g

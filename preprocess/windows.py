@@ -82,19 +82,19 @@ class WindowedDataset:
     def n_times(self) -> int:
         return self.X.shape[2]
 
-    def filter_subjects(self, subject_ids: list[int]) -> "WindowedDataset":
+    def filter_subjects(self, subject_ids: list[int]) -> WindowedDataset:
         mask = np.isin(self.subject_ids, np.asarray(subject_ids))
         return self._mask(mask)
 
-    def filter_runs(self, run_ids: list[int]) -> "WindowedDataset":
+    def filter_runs(self, run_ids: list[int]) -> WindowedDataset:
         mask = np.isin(self.run_ids, np.asarray(run_ids))
         return self._mask(mask)
 
-    def filter_classes(self, classes: list[int]) -> "WindowedDataset":
+    def filter_classes(self, classes: list[int]) -> WindowedDataset:
         mask = np.isin(self.y, np.asarray(classes))
         return self._mask(mask)
 
-    def _mask(self, mask: np.ndarray) -> "WindowedDataset":
+    def _mask(self, mask: np.ndarray) -> WindowedDataset:
         return WindowedDataset(
             X=self.X[mask],
             y=self.y[mask],

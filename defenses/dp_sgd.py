@@ -107,7 +107,7 @@ class DPSGDVictim(VictimModel):
         ModuleValidator.validate(net, strict=True)
         return net.to(self.device)
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "DPSGDVictim":
+    def fit(self, X: np.ndarray, y: np.ndarray) -> DPSGDVictim:
         if X.dtype != np.float32:
             X = X.astype(np.float32, copy=False)
         net = self._build()

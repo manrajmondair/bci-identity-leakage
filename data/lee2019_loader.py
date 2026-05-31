@@ -19,7 +19,6 @@ Class mapping:
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
 
 import mne
 import numpy as np
@@ -27,15 +26,7 @@ import numpy as np
 from preprocess.filtering import bandpass
 from preprocess.windows import WindowedDataset, slide_windows
 
-
 _LEE2019_CLASSES = {"left_hand": 0, "right_hand": 1}
-
-
-@dataclass(frozen=True)
-class Lee2019Recording:
-    subject_id: int
-    session: str        # 'session_1' (day 1) or 'session_2' (day 2)
-    raw: mne.io.BaseRaw # concatenated across runs within session
 
 
 def _load_dataset():
@@ -200,7 +191,7 @@ import os as _os  # noqa: E402
 from preprocess.windows import WindowedDataset as _WD  # noqa: E402
 
 
-def _compact_cache_dir() -> "os.PathLike | None":
+def _compact_cache_dir() -> str | None:
     """Return the Drive cache root if set via env, else None.
 
     The env var matches what `data.lee2019_prefetch` writes to.
@@ -211,7 +202,7 @@ def _compact_cache_dir() -> "os.PathLike | None":
     return None
 
 
-def _compact_path(subject_id: int, session: str) -> "os.PathLike | None":
+def _compact_path(subject_id: int, session: str) -> str | None:
     cd = _compact_cache_dir()
     if cd is None:
         return None

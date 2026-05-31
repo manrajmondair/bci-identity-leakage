@@ -12,13 +12,11 @@ by side.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Iterable, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Color palette -- Wong (2011) color-blind-safe set, plus neutrals.
@@ -241,7 +239,7 @@ def value_with_ci_bar(
     plt.rcParams.update(journal_style())
     fig, ax = plt.subplots(figsize=figsize)
 
-    bar = ax.bar([label], [value],
+    ax.bar([label], [value],
                  yerr=[[value - ci_low], [ci_high - value]],
                  color=PALETTE["accent"], edgecolor=PALETTE["ink"],
                  linewidth=0.6, width=0.45,

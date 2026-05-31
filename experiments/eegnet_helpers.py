@@ -132,8 +132,8 @@ def finetune_to_reid_head(
                            input_scale=getattr(victim, "input_scale", 1e6)).to(device)
     # Warm up the lazy head with one dummy forward so AdamW sees all
     # parameters at epoch 0.
-    n_channels = getattr(victim, "n_channels")
-    n_times = getattr(victim, "n_times")
+    n_channels = victim.n_channels
+    n_times = victim.n_times
     with torch.no_grad():
         dummy = torch.zeros(2, n_channels, n_times,
                             device=device, dtype=torch.float32)
@@ -144,7 +144,7 @@ def finetune_to_reid_head(
     n = len(X_train)
     Xt = torch.from_numpy(X_train.astype(np.float32, copy=False))
     yt = torch.from_numpy(y_idx)
-    for epoch in range(n_epochs):
+    for _epoch in range(n_epochs):
         idx = rng.permutation(n)
         for i in range(0, n, batch_size):
             sl = idx[i:i + batch_size]

@@ -22,9 +22,6 @@ from config import FIGURES_DIR, RESULTS_DIR
 from eval.plots import (
     FIG_DOUBLE,
     FIG_DOUBLE_TALL,
-    FIG_SINGLE,
-    FIG_SINGLE_TALL,
-    FIG_TRIPLE,
     FIG_WIDE,
     PALETTE,
     closed_set_bar_chart,
@@ -1232,7 +1229,7 @@ def render_xds_symmetric() -> None:
     colors = [PALETTE["fail"] if v <= 0.55
               else (PALETTE["warn"] if v < 0.75 else PALETTE["ok"])
               for v in values]
-    bars = ax.barh(y, values, color=colors,
+    ax.barh(y, values, color=colors,
                    xerr=[err_lo, err_hi],
                    edgecolor=PALETTE["ink"], linewidth=0.5, height=0.62,
                    error_kw=dict(ecolor=PALETTE["ink"], elinewidth=0.9,
@@ -1648,8 +1645,8 @@ def render_lee2019_fairness() -> None:
                     edgecolor=PALETTE["ink"], linewidth=0.4, alpha=0.85)
             ax.axvline(h["mean"], color=PALETTE["ink"], lw=1.1,
                        label=f"mean {h['mean']:.3f}")
-            ax.set_ylabel(("Subject count  (n=54)" if victim == "fbcsp"
-                           else "Subject count"))
+            ax.set_ylabel("Subject count  (n=54)" if victim == "fbcsp"
+                           else "Subject count")
             # leave headroom so the mean line label doesn't clash with
             # the tallest bar
             _, top = ax.get_ylim()

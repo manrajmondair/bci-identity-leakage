@@ -29,7 +29,6 @@ from data.physionet_loader import (
 )
 from preprocess.windows import windowed_subjects
 
-
 _OK = "OK"
 _WARN = "WARN"
 _FAIL = "FAIL"
@@ -385,13 +384,13 @@ def check_result_files(audit: Audit) -> dict:
 # parameters within plausible ranges, and protocol-specific sanity (e.g.
 # Lee 2019 cross-session lift over chance, DP final epsilon close to target).
 # -----------------------------------------------------------------------------
-def _ci_brackets(audit: "Audit", name: str, lo, point, hi) -> None:
+def _ci_brackets(audit: Audit, name: str, lo, point, hi) -> None:
     audit.expect(name,
                  lo is not None and hi is not None and lo <= point <= hi,
                  f"low={lo} point={point} high={hi}")
 
 
-def _in_unit_interval(audit: "Audit", name: str, value, *, allow_close: bool = True) -> None:
+def _in_unit_interval(audit: Audit, name: str, value, *, allow_close: bool = True) -> None:
     if value is None:
         audit.record(name, _FAIL, "value is None")
         return
@@ -401,7 +400,7 @@ def _in_unit_interval(audit: "Audit", name: str, value, *, allow_close: bool = T
                  f"value={value}")
 
 
-def check_extension_results(audit: "Audit") -> None:
+def check_extension_results(audit: Audit) -> None:
     print("\n## 7. EXTENSION RESULT INVARIANTS", flush=True)
 
     # ---- experiment 20: Lee 2019 cross-session re-ID -------------------

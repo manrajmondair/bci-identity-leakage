@@ -21,7 +21,6 @@ from pathlib import Path
 
 from config import RESULTS_DIR
 
-
 _FAMILY_COLORS = {
     "no_defense":         "#2c3e50",
     "d1_pca":             "#1f78b4",

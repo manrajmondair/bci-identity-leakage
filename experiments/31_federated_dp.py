@@ -110,7 +110,7 @@ def main() -> None:
           flush=True)
 
     # ---- Attack 1: logreg probe ----
-    print(f"=== attack 1: logreg probe ===", flush=True)
+    print("=== attack 1: logreg probe ===", flush=True)
     t0 = time.time()
     a1 = closed_set_reid(victim, train, test, probes=("logreg",),
                         bootstrap_n=args.bootstrap_n, seed=args.seed)[0]
@@ -118,7 +118,7 @@ def main() -> None:
           f"({time.time() - t0:.0f}s)\n", flush=True)
 
     # ---- Attack 2: encoder fine-tune ----
-    print(f"=== attack 2: encoder fine-tune ===", flush=True)
+    print("=== attack 2: encoder fine-tune ===", flush=True)
     t0 = time.time()
     ft_model, sid_to_idx = finetune_to_reid_head(
         victim, train.X, train.subject_ids,

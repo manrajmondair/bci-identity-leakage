@@ -12,7 +12,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Iterable
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 import mne
@@ -140,7 +140,7 @@ def run_label_pair(run: int) -> tuple[int, int]:
 # Demographic metadata. PhysioNet stores age/sex in each subject's EDF header
 # under "subject_info" → dict with keys 'his_id', 'sex', 'age', 'birthday'.
 # `sex`: 1 = male, 2 = female, 0 = unknown (mne convention).
-@lru_cache(maxsize=None)
+@cache
 def subject_metadata(subject_id: int, cache_dir: Path | None = None) -> dict:
     """Return {'subject_id', 'age_years', 'sex', 'sex_code'} for a subject.
 

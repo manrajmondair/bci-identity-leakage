@@ -26,7 +26,8 @@ import torch
 
 from attacks.verification import open_set_verification
 from config import RESULTS_DIR
-from data.bciiv2a_loader import load_subject_session, valid_subjects as iv2a_subjects
+from data.bciiv2a_loader import load_subject_session
+from data.bciiv2a_loader import valid_subjects as iv2a_subjects
 from data.channel_subset import (
     channel_intersection,
     resample_windows,
