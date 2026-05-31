@@ -1,6 +1,6 @@
 """A4 cross-dataset, symmetric — extends experiment 13 to three directions.
 
-Experiment 13 covered PhysioNet -> IV-2a (AUC 0.694). A reviewer can fairly
+Experiment 13 covered PhysioNet -> IV-2a (AUC 0.726). A reviewer can fairly
 ask: is that direction-specific? Does the transfer claim survive when we
 swap train and test, or when we substitute a third dataset?
 

@@ -1,6 +1,6 @@
 """Direct parallel HTTPS downloader for PhysioNet EEG-MMIDB.
 
-The thread-pool prefetcher backed by mne.datasets.eegbci (in prefetch.py)
+The thread-pool prefetcher backed by mne.datasets.eegbci
 serializes badly because pooch holds a per-dataset lock when checking
 its registry. We saw ~1 subject/min on 8 workers, which would take 100+
 minutes for the full corpus. This direct version downloads each EDF

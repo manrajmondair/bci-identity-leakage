@@ -1,5 +1,5 @@
 """Bandpass + notch filtering on raw EEG. Standard motor-imagery preprocessing:
-zero-phase FIR bandpass 8–30 Hz, no ICA (we want to test what a *typical* BCI
+zero-phase FIR bandpass 4–40 Hz, no ICA (we want to test what a *typical* BCI
 pipeline leaks, not a heavily-cleaned one)."""
 from __future__ import annotations
 

@@ -19,7 +19,7 @@ This experiment runs that protocol explicitly for D3:
 
 If the formal (ε, δ) bound holds empirically in the DP-aware setting,
 the MIA AUC stays near 0.5 + the (small) DP slack. If AUC -> the
-no-defense 0.878 figure even when shadows are DP-trained, the empirical
+no-defense 0.845 figure even when shadows are DP-trained, the empirical
 gap between "DP holds vs encoder fine-tune" and "DP holds vs DP-aware
 MIA" tells us something about what attack the bound actually covers.
 
@@ -229,7 +229,7 @@ def main() -> None:
     advantage = float(tpr[idx] - fpr[idx])
     adv_thresh = float(thresh[idx])
 
-    BASELINE_UNDEFENDED = 0.878  # from experiments/08_a5_membership_inference.json
+    BASELINE_UNDEFENDED = 0.845  # from experiments/08_a5_membership_inference.json
 
     result = DPAwareMIAResult(
         n_shadows=int(args.n_shadows),

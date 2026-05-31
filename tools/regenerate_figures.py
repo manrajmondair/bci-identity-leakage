@@ -1293,7 +1293,7 @@ def render_dp_aware_mia() -> None:
     lo = aucs - np.array([r["lo"] for r in rows])
     hi = np.array([r["hi"] for r in rows]) - aucs
     yeom = np.array([1.0 - np.exp(-r["eps_final"]) - r["delta"] for r in rows])
-    undefended = 0.878
+    undefended = 0.845
 
     ax.bar(x, aucs, yerr=[lo, hi], color=PALETTE["accent"],
            edgecolor=PALETTE["ink"], linewidth=0.5, width=0.45,
@@ -1579,8 +1579,7 @@ def render_federated_dp() -> None:
     ax.axhline(d["attack_logreg"]["chance_top1"], color=PALETTE["fail"],
                lw=0.7, ls=":",
                label=f"chance ({d['attack_logreg']['chance_top1']:.4f})")
-    eps = d.get("epsilon_participant_level_rdp",
-                d.get("informal_epsilon_participant_level"))
+    eps = d["epsilon_participant_level_rdp"]
     ax.set_ylabel("Re-ID top-1")
     ax.set_ylim(0, 0.50)
     ax.set_title(

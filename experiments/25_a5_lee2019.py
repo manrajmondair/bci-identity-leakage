@@ -1,7 +1,7 @@
 """A5 — membership inference on Lee 2019 OpenBMI motor imagery.
 
 Second-corpus replication of the headline A5 result. PhysioNet's
-experiment 08 reports MI AUC = 0.878 on EEGNet shadow models trained on
+experiment 08 reports MI AUC = 0.845 on EEGNet shadow models trained on
 104 subjects. This script runs the same Shokri-style shadow methodology
 on Lee 2019 (54 subjects, binary left/right hand, ~600 windows/subject).
 

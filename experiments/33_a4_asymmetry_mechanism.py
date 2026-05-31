@@ -1,8 +1,8 @@
 """Lee 2019 -> PhysioNet asymmetry mechanism test.
 
 Experiment 26 reported that Lee 2019 -> PhysioNet A4 verification
-collapses to AUC = 0.496 (chance), while the reverse direction holds
-at AUC = 0.826 and IV-2a -> PhysioNet succeeds at 0.831 with only 9
+collapses to AUC = 0.499 (chance), while the reverse direction holds
+at AUC = 0.814 and IV-2a -> PhysioNet succeeds at 0.838 with only 9
 training subjects. The working hypothesis is that the Lee 2019
 training task (binary left/right hand) is too easy to induce
 subject-discriminative features that transfer across recording
@@ -27,7 +27,7 @@ which is the same structural pressure PhysioNet's 4-class label
 applies during contrastive training.
 
 If AUC on Lee 2019 -> PhysioNet rises materially above the original
-0.496 with no other change, the task-complexity hypothesis is
+0.499 with no other change, the task-complexity hypothesis is
 supported. If it stays near chance, the asymmetry has a different
 cause (recording-rig spectral content, channel set, sampling-rate
 artefact post-resample).
