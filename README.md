@@ -9,6 +9,30 @@ evaluated under matched generic *and* adaptive attackers. Three EEG
 corpora, thirty-three numbered experiments, 1000-resample trial-grouped
 bootstrap CIs, and a 240-invariant audit on every commit.
 
+## Key results
+
+<p align="center"><img src="assets/graphical_abstract.png" width="780"></p>
+
+**Figure 1.** Motor-imagery BCI decoders leak subject identity that is
+**(a)** decoupled from task accuracy — Riemannian features re-identify all 104
+PhysioNet subjects at 100% while decoding the task at 35%; **(b)** a biometric on
+*unseen* people, verifying held-out subjects at AUC 0.92–0.94 on two independent
+corpora; **(c)** recoverable through every ad-hoc and adversarial defense once the
+attacker adapts (fine-tuning the defended encoder); and **(d)** contained only by
+DP-SGD, and only at a strong privacy budget (ε ≤ 1).
+
+<p align="center">
+  <a href="figures/02_closed_set_reid.pdf"><img src="assets/closed_set.png" width="265"></a>
+  <a href="figures/26_a4_xds_symmetric.pdf"><img src="assets/cross_dataset.png" width="265"></a>
+  <a href="figures/29_d3_eps_sweep.pdf"><img src="assets/dp_sweep.png" width="265"></a>
+</p>
+
+*Left → right: closed-set re-identification per decoder family; cross-dataset
+verification in five directions (one collapses to chance — a direction-dependent
+asymmetry); the DP-SGD privacy–utility frontier under generic and adaptive
+attackers. Every figure regenerates from `results/*.json` via
+`python -m tools.regenerate_figures`; the full set is in [`figures/`](figures/).*
+
 ## Installation
 
 ```bash
