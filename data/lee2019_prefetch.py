@@ -13,7 +13,7 @@ tier Colab + free-tier Drive:
       ~5-8x faster end-to-end versus a single connection.
 
   2.  Stream-and-compact per subject. Each (subject, session) .mat is
-      decoded, bandpassed, windowed, and written as a compact int16/.npz
+      decoded, bandpassed, windowed, and written as a compact float16 .npz
       to the cache directory, then the raw .mat is deleted. Total cache
       footprint after the prefetch run is ~3-5 GB rather than ~65 GB.
 
