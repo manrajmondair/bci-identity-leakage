@@ -34,5 +34,7 @@
   "seed": 0,
   "epsilon_participant_level_rdp": 97.73299079819824,
   "epsilon_participant_level_delta": 1e-05,
-  "epsilon_participant_level_simple_gaussian_bound": 97.73299079819824
+  "epsilon_participant_level_simple_gaussian_bound": 32.85326106098082,
+  "epsilon_is_formal_guarantee": false,
+  "epsilon_note": "RDP epsilon is a valid participant-level bound only under Poisson client sampling (poisson_clients=True); this run used fixed-size cohort sampling, so epsilon is an informal annotation, not an enforced budget. The empirical fine-tune protection is the substantive result."
 }
