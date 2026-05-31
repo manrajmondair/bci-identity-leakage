@@ -1786,9 +1786,134 @@ def render_multi_seed() -> None:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+def render_graphical_abstract() -> None:
+    """Figure 1 — graphical abstract. Four panels: (a) re-ID is decoupled from
+    task accuracy, (b) EEG verifies unseen subjects across corpora, (c) ad-hoc /
+    adversarial defenses collapse under an adaptive attacker, (d) only DP-SGD
+    holds. Built entirely from the canonical result JSONs."""
+    plt.rcParams.update(journal_style())
+    fig, ((axA, axB), (axC, axD)) = plt.subplots(2, 2, figsize=(7.5, 6.3))
+
+    def _panel_letter(ax, s):
+        ax.text(-0.17, 1.10, s, transform=ax.transAxes, fontsize=13,
+                fontweight="bold", va="top", ha="left")
+
+    # ---- (a) identity leaks at chance task accuracy --------------------
+    a1 = {r["victim"]: r for r in json.loads(
+        (RESULTS_DIR / "02_closed_set_reid.json").read_text()) if r["probe"] == "logreg"}
+    order = ["riemann_ts_lr", "fbcsp_lda", "eegnet"]
+    labels = ["Riemann", "FBCSP", "EEGNet"]
+    reid = [a1[v]["top1"] for v in order]
+    task = [a1[v]["task_acc"] for v in order]
+    chance = a1["eegnet"]["chance_top1"]
+    x = np.arange(3); w = 0.38
+    axA.bar(x - w/2, reid, w, color=PALETTE["fail"], edgecolor=PALETTE["ink"],
+            linewidth=0.5, label="subject re-ID")
+    axA.bar(x + w/2, task, w, color=PALETTE["muted"], edgecolor=PALETTE["ink"],
+            linewidth=0.5, label="task accuracy")
+    for xi, (r, t) in enumerate(zip(reid, task)):
+        axA.text(xi - w/2, r + 0.02, f"{r*100:.0f}%", ha="center", va="bottom",
+                 fontsize=8, fontweight="bold", color=PALETTE["fail"])
+        axA.text(xi + w/2, t + 0.02, f"{t*100:.0f}%", ha="center", va="bottom",
+                 fontsize=7.5, color=PALETTE["neutral"])
+    axA.axhline(chance, color=PALETTE["neutral"], lw=0.8, ls=(0, (4, 3)))
+    axA.text(2.45, chance + 0.012, f"chance {chance*100:.1f}%", ha="right",
+             va="bottom", fontsize=6.8, color=PALETTE["neutral"])
+    axA.set_xticks(x); axA.set_xticklabels(labels)
+    axA.set_ylabel("Accuracy"); axA.set_ylim(0, 1.1)
+    axA.set_title("Identity leaks at chance task accuracy", fontsize=9.5)
+    axA.legend(loc="upper right", fontsize=7.2, frameon=False, handlelength=1.1)
+    _maybe_grid(axA, "y"); _panel_letter(axA, "a")
+
+    # ---- (b) EEG verifies unseen subjects across corpora ---------------
+    b06 = json.loads((RESULTS_DIR / "06_a4_open_set.json").read_text())["auc"]
+    b24w = json.loads((RESULTS_DIR / "24_a4_lee2019_within_session.json").read_text())["auc"]
+    b24c = json.loads((RESULTS_DIR / "24_a4_lee2019_cross_session.json").read_text())["auc"]
+    blabels = ["PhysioNet\n24 unseen", "Lee 2019\nwithin-session", "Lee 2019\ncross-session"]
+    bvals = [b06, b24w, b24c]
+    yb = np.arange(3)[::-1]
+    axB.barh(yb, bvals, color=PALETTE["accent"], edgecolor=PALETTE["ink"],
+             linewidth=0.5, height=0.62)
+    for yi, v in zip(yb, bvals):
+        axB.text(v - 0.012, yi, f"{v:.3f}", ha="right", va="center",
+                 color="white", fontsize=8.5, fontweight="bold")
+    axB.axvline(0.5, color=PALETTE["fail"], lw=0.9, ls=(0, (4, 3)))
+    axB.text(0.5, 2.62, "chance", ha="center", va="bottom", fontsize=6.8,
+             color=PALETTE["fail"])
+    axB.set_yticks(yb); axB.set_yticklabels(blabels)
+    axB.set_xlim(0.45, 1.0); axB.set_ylim(-0.6, 2.9)
+    axB.set_xlabel("Verification AUC (unseen subjects)")
+    axB.set_title("EEG is a biometric on unseen people", fontsize=9.5)
+    _maybe_grid(axB, "x"); _panel_letter(axB, "b")
+
+    # ---- (c) ad-hoc / adversarial defenses collapse --------------------
+    d23 = {(d["defense"], d["attack"]): d["top1"] for d in json.loads(
+        (RESULTS_DIR / "23_d1_adaptive_attacker.json").read_text())["defenses"]}
+    d15a = {a["attack"]: a["top1"] for a in json.loads(
+        (RESULTS_DIR / "15_d2_adaptive_attacker.json").read_text())["attacks"]}
+    defs = ["PCA\nk=8", "noise\nσ=1", "chan-drop\nk=8", "DANN\nλ=0.2"]
+    generic = [d23[("pca_k8", "logreg_probe")], d23[("noise_sigma1.0", "logreg_probe")],
+               d23[("channel_drop_k8", "logreg_probe")], d15a["logreg_probe"]]
+    adaptive = [d23[("pca_k8", "encoder_finetune")], d23[("noise_sigma1.0", "encoder_finetune")],
+                d23[("channel_drop_k8", "encoder_finetune")], d15a["encoder_finetune"]]
+    baseline = a1["eegnet"]["top1"]
+    x = np.arange(4); w = 0.38
+    axC.bar(x - w/2, generic, w, color=PALETTE["skyblue"], edgecolor=PALETTE["ink"],
+            linewidth=0.5, label="generic probe")
+    axC.bar(x + w/2, adaptive, w, color=PALETTE["contrast"], edgecolor=PALETTE["ink"],
+            linewidth=0.5, label="adaptive fine-tune")
+    axC.axhline(baseline, color=PALETTE["ink"], lw=0.9, ls=(0, (5, 2)))
+    axC.text(3.45, baseline + 0.012, f"no defense {baseline:.2f}", ha="right",
+             va="bottom", fontsize=6.8, color=PALETTE["ink"])
+    axC.set_xticks(x); axC.set_xticklabels(defs, fontsize=7.8)
+    axC.set_ylabel("Re-ID top-1"); axC.set_ylim(0, 0.9)
+    axC.set_title("Ad-hoc & adversarial defenses collapse", fontsize=9.5)
+    axC.legend(loc="upper left", fontsize=7.2, frameon=False, handlelength=1.1)
+    _maybe_grid(axC, "y"); _panel_letter(axC, "c")
+
+    # ---- (d) only DP-SGD holds -----------------------------------------
+    sweep = json.loads((RESULTS_DIR / "29_d3_eps_sweep.json").read_text())["pareto"]
+    eps_labels = ["0.5", "1", "3", "10", "∞"]
+    gen = [r["attack_logreg"]["top1"] for r in sweep]
+    adp = [r["attack_finetune"]["top1"] for r in sweep]
+    tsk = [r["task_acc"] for r in sweep]
+    xx = np.arange(5)
+    axD.axvspan(-0.4, 1.0, color=PALETTE["ok"], alpha=0.10)
+    axD.plot(xx, adp, "-o", color=PALETTE["contrast"], lw=1.7, ms=5.5,
+             markeredgecolor=PALETTE["ink"], markeredgewidth=0.5, label="adaptive re-ID")
+    axD.plot(xx, gen, "-o", color=PALETTE["accent"], lw=1.4, ms=4.5,
+             markeredgecolor=PALETTE["ink"], markeredgewidth=0.5, label="generic re-ID")
+    axD.axhline(baseline, color=PALETTE["ink"], lw=0.8, ls=(0, (5, 2)))
+    axD.text(4.32, baseline + 0.012, "no-defense 0.41", ha="right", va="bottom",
+             fontsize=6.8, color=PALETTE["ink"])
+    axD.text(0.3, 0.015, "ε ≤ 1\nstrong", ha="center", va="bottom", fontsize=6.8,
+             color=PALETTE["ok"], fontweight="bold")
+    axD2 = axD.twinx()
+    axD2.plot(xx, tsk, "-^", color=PALETTE["ok"], lw=1.2, ms=4.5,
+              markeredgecolor=PALETTE["ink"], markeredgewidth=0.4, label="task accuracy")
+    axD2.set_ylabel("Task accuracy", color=PALETTE["ok"], fontsize=8.5)
+    axD2.set_ylim(0.20, 0.40)
+    axD2.tick_params(axis="y", labelcolor=PALETTE["ok"], labelsize=7.5)
+    axD2.spines["top"].set_visible(False)
+    axD.set_xticks(xx); axD.set_xticklabels(eps_labels)
+    axD.set_xlabel("DP-SGD privacy budget  ε"); axD.set_ylabel("Re-ID top-1")
+    axD.set_ylim(0, 0.46); axD.set_xlim(-0.4, 4.4)
+    axD.set_title("Only DP-SGD holds", fontsize=9.5)
+    h1, l1 = axD.get_legend_handles_labels()
+    h2, l2 = axD2.get_legend_handles_labels()
+    axD.legend(h1 + h2, l1 + l2, loc="upper left", bbox_to_anchor=(0.0, 0.85),
+               fontsize=7.0, frameon=False, handlelength=1.1)
+    _panel_letter(axD, "d")
+
+    fig.savefig(FIGURES_DIR / "00_graphical_abstract.pdf")
+    plt.close(fig)
+    print("regenerated figures/00_graphical_abstract.pdf")
+
+
 def main() -> None:
     print("Regenerating all figures from result JSONs ...\n")
     for fn in (
+        render_graphical_abstract,
         # Core experiments
         render_a1, render_within_subject_reid,
         render_a2, render_a3, render_a4, render_a5,

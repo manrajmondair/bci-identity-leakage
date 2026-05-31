@@ -45,24 +45,27 @@ WONG = [
 # each renderer so style is stable across the whole pipeline.
 # ---------------------------------------------------------------------------
 JOURNAL_STYLE: dict = {
-    # text
-    "font.family":         "serif",
-    "font.serif":          ["DejaVu Serif", "Times New Roman", "Computer Modern Roman"],
-    "font.size":           9.0,
-    "axes.titlesize":      10.0,
-    "axes.titleweight":    "regular",
-    "axes.titlepad":       6.0,
-    "axes.labelsize":      9.5,
-    "axes.labelpad":       3.5,
+    # text — clean sans-serif (Nature/Science figure convention), math in CM
+    "font.family":         "sans-serif",
+    "font.sans-serif":     ["Helvetica", "Arial", "DejaVu Sans"],
+    "font.size":           9.5,
+    "axes.titlesize":      10.5,
+    "axes.titleweight":    "bold",
+    "axes.titlepad":       7.0,
+    "axes.labelsize":      10.0,
+    "axes.labelweight":    "regular",
+    "axes.labelpad":       4.0,
     "axes.labelcolor":     PALETTE["ink"],
-    "xtick.labelsize":     8.5,
-    "ytick.labelsize":     8.5,
-    "legend.fontsize":     8.0,
+    "xtick.labelsize":     9.0,
+    "ytick.labelsize":     9.0,
+    "legend.fontsize":     8.5,
     "legend.frameon":      False,
-    "legend.handlelength": 1.6,
-    "legend.handletextpad": 0.6,
+    "legend.handlelength": 1.5,
+    "legend.handletextpad": 0.55,
+    "legend.labelspacing": 0.35,
+    "legend.columnspacing": 1.4,
     # math
-    "mathtext.fontset":    "cm",
+    "mathtext.fontset":    "dejavusans",
     "mathtext.default":    "regular",
     # axes
     "axes.edgecolor":      PALETTE["ink"],
