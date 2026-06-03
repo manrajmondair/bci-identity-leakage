@@ -135,3 +135,4 @@ needs to be committed.
   bounded. The Lee 2019 compact cache on Drive is ~4 GB.
 - **Mount Drive only for Lee 2019 notebooks.** Other notebooks pull
   data through MNE + moabb's local cache and need no Drive mount.
+

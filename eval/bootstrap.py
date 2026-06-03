@@ -77,3 +77,4 @@ def grouped_bootstrap_ci(
     low, high = np.percentile(samples, [100 * alpha / 2, 100 * (1 - alpha / 2)])
     return BootstrapCI(point=point, low=float(low), high=float(high),
                        alpha=alpha, n_resamples=n_resamples)
+

@@ -278,3 +278,4 @@ def _plot_within_subject_summary(task_rows, attack_rows, out_path, *, n_subjects
 
 if __name__ == "__main__":
     main()
+

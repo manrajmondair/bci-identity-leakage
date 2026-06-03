@@ -34,3 +34,4 @@ Notebooks under `colab/` write this file at the end of every run; the result JSO
 ## 2026-05 refresh
 
 After a code-hardening pass (A4 verification pairing, DANN λ application, federated-ε accounting, and embed-hook robustness — see the git history), every canonical result was re-generated. The refresh-run provenance is the `2026-05-30` / `2026-05-31` entries; the original development runs (`2026-05-07`) are retained for history. Most numbers reproduced exactly — the A4 PhysioNet open-set headline (AUC 0.925) and the closed-set re-ID baselines (100% Riemann / 89% FBCSP / 41% EEGNet) were unchanged.
+

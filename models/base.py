@@ -37,3 +37,4 @@ class VictimModel(ABC):
     def score(self, X: np.ndarray, y: np.ndarray) -> float:
         """Mean classification accuracy."""
         return float((self.predict(X) == y).mean())
+

@@ -360,3 +360,4 @@ class FederatedDPVictim(VictimModel):
         q = self.participant_fraction
         sigma = max(self.noise_sigma, 1e-6)
         return math.sqrt(2.0 * R * q * q * math.log(1.0 / delta)) / sigma
+

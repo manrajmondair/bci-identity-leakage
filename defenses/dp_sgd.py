@@ -225,3 +225,4 @@ class DPSGDVictim(VictimModel):
         if emb.ndim > 2:
             emb = emb.reshape(emb.shape[0], -1)
         return emb.astype(np.float32, copy=False)
+

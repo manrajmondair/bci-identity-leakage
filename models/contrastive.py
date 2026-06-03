@@ -84,3 +84,4 @@ def batch_hard_triplet_loss(
     if valid.sum() == 0:
         return torch.zeros((), device=emb.device, requires_grad=True)
     return loss[valid].mean()
+

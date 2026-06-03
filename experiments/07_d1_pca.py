@@ -219,3 +219,4 @@ def _print_d1_table(results: list[dict]) -> None:
 
 if __name__ == "__main__":
     main()
+

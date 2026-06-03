@@ -586,3 +586,4 @@ def closed_set_table(results: list[dict]) -> str:
             f"{task_acc_s} | {r['chance_top1']:.3f} |"
         )
     return "\n".join(lines)
+

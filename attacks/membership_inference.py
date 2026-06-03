@@ -225,3 +225,4 @@ def membership_inference(
         advantage=advantage, advantage_threshold=adv_thresh,
         n_attack_features=int(Z.shape[1]),
     )
+

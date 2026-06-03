@@ -21,3 +21,4 @@ def notch(raw: mne.io.BaseRaw, freqs=(60.0,), *, copy: bool = True, verbose: boo
     raw = raw.copy() if copy else raw
     raw.notch_filter(freqs=list(freqs), verbose=verbose)
     return raw
+

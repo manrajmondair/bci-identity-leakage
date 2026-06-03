@@ -333,3 +333,4 @@ def windowed_subjects(
                  sfreq=np.asarray(sfreq),
                  channel_names=np.asarray(ch_names))
     return result
+

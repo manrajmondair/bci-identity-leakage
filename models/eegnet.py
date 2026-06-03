@@ -203,3 +203,4 @@ class EEGNetVictim(VictimModel):
         raise RuntimeError(
             "EEGNet: could not locate a classifier head (no Linear child found)."
         )
+

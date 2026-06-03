@@ -160,3 +160,4 @@ class FBCSPVictim(VictimModel):
         if self.select_idx_ is not None:
             F_std = F_std[:, self.select_idx_]
         return F_std.astype(np.float32, copy=False)
+

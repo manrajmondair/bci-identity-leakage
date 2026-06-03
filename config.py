@@ -44,3 +44,4 @@ MI_N_SHADOWS = 20
 MI_SHADOW_SUBJECT_FRAC = 0.5  # each shadow trains on 50% of available subjects
 
 DEFAULT_SEED = 0
+

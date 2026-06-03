@@ -55,3 +55,4 @@ not possible from the local cache alone; the document describes the
 duration-fingerprint check (point-wise verifiable for 7 of 104
 subjects, cluster-membership verifiable for the rest) and the
 structural argument that supports the assumed mapping.
+

@@ -59,3 +59,4 @@ select = ["E", "F", "I", "B", "UP", "W"]
 # one-line `ax.set_x(...); ax.set_y(...)` idiom used throughout the plotting
 # code; B905 is intentional — every zip() pairs sequences of known-equal length.
 ignore = ["E501", "E701", "E702", "B905"]
+

@@ -249,3 +249,4 @@ def _print_table(results: list[dict], *, transform: str) -> None:
 
 if __name__ == "__main__":
     main()
+

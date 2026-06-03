@@ -105,3 +105,4 @@ Code in this repository is released under the MIT License — see
 [`LICENSE`](LICENSE). Each dataset retains its original license:
 PhysioNet EEG-MMIDB (ODbL), BCI Competition IV-2a (CC-BY), Lee 2019
 OpenBMI (CC-BY 4.0), OpenNeuro ds004362 (CC0).
+

@@ -254,3 +254,4 @@ def open_set_verification(
         eer=eer, eer_threshold=eer_thresh,
     )
     return result, scores, labels
+

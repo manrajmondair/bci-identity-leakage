@@ -89,3 +89,4 @@ class RiemannianVictim(VictimModel):
         cov = self.cov_.transform(Xd)
         tangent = self.tangent_.transform(cov)
         return tangent.astype(np.float32, copy=False)
+

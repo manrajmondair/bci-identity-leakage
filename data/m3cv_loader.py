@@ -126,3 +126,4 @@ def load_subject_session_compact(
         X=X, y=y, subject_ids=s, trial_ids=trial_ids, run_ids=run_ids,
         sfreq=sfreq, channel_names=chans,
     )
+

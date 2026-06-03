@@ -67,3 +67,4 @@ def resample_windows(ds: WindowedDataset, target_sfreq: float) -> WindowedDatase
         trial_ids=ds.trial_ids, run_ids=ds.run_ids,
         sfreq=float(target_sfreq), channel_names=ds.channel_names,
     )
+
